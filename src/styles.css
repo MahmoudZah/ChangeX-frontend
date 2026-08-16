@@ -1,0 +1,73 @@
+@layer ng-icon, theme, base, components, utilities;
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.5rem;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #4338CA;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EEF2FF;
+  --secondary-foreground: #4338CA;
+  --muted: #F1F5F9;
+  --muted-foreground: #475569;
+  --accent: #EEF2FF;
+  --accent-foreground: #4338CA;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #4338CA;
+
+  /* CRMS-specific extension: status pills */
+  --status-pending: #FFFBEB;
+  --status-pending-foreground: #92400E;
+  --status-progress: #EFF6FF;
+  --status-progress-foreground: #1D4ED8;
+  --status-rework: #FFF7ED;
+  --status-rework-foreground: #C2410C;
+  --status-accepted: #ECFDF5;
+  --status-accepted-foreground: #047857;
+  --status-rejected: #FEF2F2;
+  --status-rejected-foreground: #B91C1C;
+  --status-delivered: #F5F3FF;
+  --status-delivered-foreground: #6D28D9;
+  --status-completed: #F1F5F9;
+  --status-completed-foreground: #334155;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-progress: var(--status-progress);
+  --color-status-progress-foreground: var(--status-progress-foreground);
+  --color-status-rework: var(--status-rework);
+  --color-status-rework-foreground: var(--status-rework-foreground);
+  --color-status-accepted: var(--status-accepted);
+  --color-status-accepted-foreground: var(--status-accepted-foreground);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-foreground: var(--status-rejected-foreground);
+  --color-status-delivered: var(--status-delivered);
+  --color-status-delivered-foreground: var(--status-delivered-foreground);
+  --color-status-completed: var(--status-completed);
+  --color-status-completed-foreground: var(--status-completed-foreground);
+}
