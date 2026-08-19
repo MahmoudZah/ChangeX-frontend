@@ -1,4 +1,4 @@
-﻿import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { Role, STORAGE_KEYS } from '@/shared/util/constants';
 
 export interface AuthUser {
@@ -19,7 +19,8 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._token());
   readonly isAdmin = computed(() => this._user()?.role === 'Admin');
 
-  login(email: string, _password: string): boolean {
+  login(email: string, password: string): boolean {
+    void password;
     const isAdmin = email.toLowerCase().includes('admin');
     const user: AuthUser = isAdmin
       ? {

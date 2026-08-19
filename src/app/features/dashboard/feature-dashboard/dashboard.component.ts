@@ -30,6 +30,10 @@ export class DashboardComponent implements OnInit {
 
   readonly recentCrs = computed(() => [...this.crs.crs()].slice(0, 5));
 
+  readonly userFirstName = computed(() => {
+    return this.auth.user()?.name.split(' ')[0] ?? '';
+  });
+
   readonly activeProjectCount = computed(
     () => this.projects.projects().filter((p) => p.state === 'Active').length,
   );
