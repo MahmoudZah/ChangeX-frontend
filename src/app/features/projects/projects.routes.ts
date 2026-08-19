@@ -1,1 +1,9 @@
-﻿// Placeholder: export const PROJECTS_ROUTES
+﻿import { Routes } from '@angular/router';
+
+export const PROJECTS_ROUTES: Routes = [
+  {
+    path: '',
+    loadComponent: () =>
+      import('@/features/projects/feature-project-list/project-list.component').then((m) => m.ProjectListComponent),
+  },
+];

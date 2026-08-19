@@ -1,0 +1,33 @@
+<div class="grid gap-6 lg:grid-cols-2">
+  <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <h2 class="mb-4 text-lg font-semibold">Comments</h2>
+    <div class="space-y-4">
+      @for (c of comments; track c.id) {
+        <article class="rounded-xl bg-muted/40 p-4">
+          <div class="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span class="font-semibold text-foreground">{{ c.author }}</span>
+            <span>{{ formatDate(c.createdAt) }}</span>
+          </div>
+          <p class="text-sm">{{ c.body }}</p>
+        </article>
+      } @empty {
+        <p class="text-sm text-muted-foreground">No comments yet.</p>
+      }
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <h2 class="mb-4 text-lg font-semibold">Attachments</h2>
+    <ul class="space-y-3">
+      @for (a of attachments; track a.id) {
+        <li class="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm">
+          <span class="rounded bg-destructive/10 px-2 py-0.5 text-xs font-bold uppercase text-destructive">{{ a.fileType }}</span>
+          <span class="font-medium">{{ a.fileName }}</span>
+          <span class="ml-auto text-xs text-muted-foreground">{{ formatDate(a.uploadedAt) }}</span>
+        </li>
+      } @empty {
+        <p class="text-sm text-muted-foreground">No attachments uploaded.</p>
+      }
+    </ul>
+  </section>
+</div>

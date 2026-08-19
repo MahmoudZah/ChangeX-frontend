@@ -1,0 +1,35 @@
+<div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">My Projects</h1>
+    <p class="mt-1 text-muted-foreground">View active and inactive projects tied to your organization</p>
+  </div>
+  <div class="relative w-full max-w-sm">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input
+      type="search"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+      placeholder="Filter by project name..."
+      class="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm outline-none ring-primary focus:ring-2"
+    />
+  </div>
+</div>
+
+<div class="grid gap-5 lg:grid-cols-2">
+  @for (project of filtered(); track project.id) {
+    <article class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div class="mb-3 flex items-start justify-between gap-3">
+        <h2 class="text-lg font-bold">{{ project.name }}</h2>
+        <app-status-badge [status]="project.state" />
+      </div>
+      <p class="mb-5 text-sm leading-relaxed text-muted-foreground">{{ project.description }}</p>
+      <div class="flex items-center justify-between border-t border-border pt-4 text-sm text-muted-foreground">
+        <span class="inline-flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          {{ project.changeRequestCount }} Change Requests
+        </span>
+        <span>Updated {{ formatRelative(project.lastUpdated) }}</span>
+      </div>
+    </article>
+  }
+</div>

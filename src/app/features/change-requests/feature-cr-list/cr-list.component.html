@@ -1,0 +1,88 @@
+<div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">Change Requests</h1>
+    <p class="mt-1 text-muted-foreground">Track every request from draft through delivery and billing</p>
+  </div>
+  <a
+    routerLink="/change-requests/new"
+    class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+  >
+    + New CR
+  </a>
+</div>
+
+<div class="mb-6 flex flex-wrap gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+  <input
+    type="search"
+    [value]="search()"
+    (input)="search.set($any($event.target).value); page.set(1)"
+    placeholder="Search CR name or code..."
+    class="min-w-[220px] flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none ring-primary focus:ring-2"
+  />
+  <select
+    [value]="projectFilter()"
+    (change)="projectFilter.set($any($event.target).value); page.set(1)"
+    class="rounded-xl border border-input bg-background px-3 py-2 text-sm"
+  >
+    <option value="all">Project: All Projects</option>
+    @for (p of projects(); track p.id) {
+      <option [value]="p.id">{{ p.name }}</option>
+    }
+  </select>
+  <select
+    [value]="statusFilter()"
+    (change)="statusFilter.set($any($event.target).value); page.set(1)"
+    class="rounded-xl border border-input bg-background px-3 py-2 text-sm"
+  >
+    <option value="all">Status: All Statuses</option>
+    @for (s of statuses(); track s) {
+      <option [value]="s">{{ s }}</option>
+    }
+  </select>
+  <select
+    [value]="priorityFilter()"
+    (change)="priorityFilter.set($any($event.target).value); page.set(1)"
+    class="rounded-xl border border-input bg-background px-3 py-2 text-sm"
+  >
+    <option value="all">Priority: All</option>
+    @for (p of priorities; track p) {
+      <option [value]="p">{{ p }}</option>
+    }
+  </select>
+</div>
+
+<app-data-table
+  [total]="filtered().length"
+  [from]="filtered().length ? (page() - 1) * 8 + 1 : 0"
+  [to]="Math.min(page() * pageSize, filtered().length)"
+>
+  <tr header>
+    <th class="px-4 py-3">Change Request</th>
+    <th class="px-4 py-3">Project</th>
+    <th class="px-4 py-3">Priority</th>
+    <th class="px-4 py-3">Status</th>
+    <th class="px-4 py-3">Stage</th>
+    <th class="px-4 py-3">Est. Cost</th>
+    <th class="px-4 py-3">Last Updated</th>
+  </tr>
+  @for (cr of paged(); track cr.id) {
+    <tr body class="border-t border-border hover:bg-muted/30">
+      <td class="px-4 py-3">
+        <a [routerLink]="['/change-requests', cr.id]" class="font-semibold hover:text-primary">
+          <span class="text-muted-foreground">{{ cr.code }}:</span> {{ cr.title }}
+        </a>
+      </td>
+      <td class="px-4 py-3 text-muted-foreground">{{ cr.projectName }}</td>
+      <td class="px-4 py-3"><app-priority-badge [priority]="cr.priority" /></td>
+      <td class="px-4 py-3"><app-status-badge [status]="cr.status" /></td>
+      <td class="px-4 py-3 text-muted-foreground">{{ cr.stage }}</td>
+      <td class="px-4 py-3">{{ cr.estimatedCost ? formatCurrency(cr.estimatedCost) : '—' }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ formatRelative(cr.lastUpdated) }}</td>
+    </tr>
+  }
+  <div pager class="flex items-center gap-2">
+    <button type="button" class="rounded-lg px-3 py-1 hover:bg-muted disabled:opacity-40" [disabled]="page() === 1" (click)="setPage(page() - 1)">Previous</button>
+    <span class="rounded-lg bg-muted px-3 py-1 text-xs font-semibold">{{ page() }}</span>
+    <button type="button" class="rounded-lg px-3 py-1 hover:bg-muted disabled:opacity-40" [disabled]="page() >= pageCount()" (click)="setPage(page() + 1)">Next</button>
+  </div>
+</app-data-table>

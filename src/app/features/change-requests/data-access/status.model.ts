@@ -1,1 +1,8 @@
-﻿// Placeholder: Status interface { id, currentStatus, availableStatuses, accessedBy }
+﻿export interface StatusHistoryEntry {
+  id: string;
+  crId: string;
+  status: string;
+  changedAt: string;
+  changedBy: string;
+  note?: string;
+}

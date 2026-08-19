@@ -1,0 +1,64 @@
+@if (cr(); as item) {
+  <div class="mb-2 text-sm text-muted-foreground">
+    <a routerLink="/change-requests" class="hover:text-primary">Change Requests</a>
+    <span class="mx-1">›</span>
+    <span>{{ item.code }}: {{ item.title }}</span>
+  </div>
+
+  <div class="mb-6 flex flex-wrap items-start gap-3">
+    <div class="min-w-0 flex-1">
+      <h1 class="text-3xl font-bold tracking-tight">{{ item.code }}: {{ item.title }}</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Project: {{ item.projectName }} • Created {{ formatDate(item.createdAt) }}
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <app-status-badge [status]="item.status" />
+      <app-priority-badge [priority]="item.priority" />
+    </div>
+  </div>
+
+  <div class="mb-6 flex gap-6 border-b border-border">
+    @for (t of [
+      { id: 'overview', label: 'Overview' },
+      { id: 'timeline', label: 'Timeline & Stages' },
+      { id: 'comments', label: 'Comments & Attachments (' + attachmentCount() + ')' }
+    ]; track t.id) {
+      <button
+        type="button"
+        class="border-b-2 px-1 pb-3 text-sm font-semibold transition"
+        [class.border-primary]="tab() === t.id"
+        [class.text-primary]="tab() === t.id"
+        [class.border-transparent]="tab() !== t.id"
+        [class.text-muted-foreground]="tab() !== t.id"
+        (click)="tab.set($any(t.id))"
+      >
+        {{ t.label }}
+      </button>
+    }
+  </div>
+
+  @switch (tab()) {
+    @case ('overview') {
+      <app-cr-overview-tab [cr]="item" />
+    }
+    @case ('timeline') {
+      <app-cr-status-timeline-tab [crId]="item.id" />
+    }
+    @case ('comments') {
+      <app-cr-attachments-comments-tab [crId]="item.id" />
+    }
+  }
+
+  @if (item.status === 'Pending Estimate' || item.status === 'Estimate Approval') {
+    <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card px-6 py-4 shadow-sm">
+      <p class="text-sm font-medium text-muted-foreground">Client Approval Required</p>
+      <div class="flex gap-3">
+        <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10">Reject Estimate</button>
+        <button type="button" class="rounded-xl bg-approve px-4 py-2 text-sm font-semibold text-approve-foreground">Approve Estimate</button>
+      </div>
+    </div>
+  }
+} @else {
+  <p class="text-muted-foreground">Change request not found.</p>
+}

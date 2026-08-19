@@ -1,0 +1,21 @@
+<div class="mb-8">
+  <h1 class="text-3xl font-bold tracking-tight">Users & Team</h1>
+  <p class="mt-1 text-muted-foreground">Manage vendor and client user accounts</p>
+</div>
+
+<app-data-table [total]="users().length" [from]="1" [to]="users().length">
+  <tr header>
+    <th class="px-4 py-3">Name</th>
+    <th class="px-4 py-3">Email</th>
+    <th class="px-4 py-3">Role</th>
+    <th class="px-4 py-3">Company</th>
+  </tr>
+  @for (user of users(); track user.id) {
+    <tr body class="border-t border-border hover:bg-muted/30">
+      <td class="px-4 py-3 font-semibold">{{ user.name }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ user.email }}</td>
+      <td class="px-4 py-3">{{ user.role }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ user.company }}</td>
+    </tr>
+  }
+</app-data-table>

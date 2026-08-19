@@ -1,0 +1,41 @@
+<div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 class="mb-3 text-lg font-semibold">Description</h2>
+      <p class="text-sm leading-relaxed text-muted-foreground">{{ cr.description }}</p>
+    </section>
+
+    <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 class="mb-4 text-lg font-semibold">Detailed Scope</h2>
+      <ul class="space-y-3">
+        @for (item of cr.scope; track item) {
+          <li class="flex items-start gap-3 text-sm">
+            <span class="mt-0.5 text-approve-foreground">✓</span>
+            <span>{{ item }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 class="mb-4 text-lg font-semibold">Estimate Cost Breakdown</h2>
+      <dl class="space-y-3 text-sm">
+        <div class="flex justify-between"><dt class="text-muted-foreground">Engineering Hours</dt><dd class="font-medium">{{ cr.estimatedHours }} Hours</dd></div>
+        <div class="flex justify-between"><dt class="text-muted-foreground">Hourly Rate</dt><dd class="font-medium">{{ formatCurrency(cr.hourlyRate) }}/hr</dd></div>
+        <div class="flex justify-between border-t border-border pt-3 text-base"><dt class="font-semibold">Total Estimated Cost</dt><dd class="font-bold">{{ formatCurrency(cr.estimatedCost) }}</dd></div>
+      </dl>
+    </section>
+
+    @if (cr.expectedStart && cr.expectedDelivery) {
+      <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 class="mb-4 text-lg font-semibold">Planned Timeline</h2>
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between"><dt class="text-muted-foreground">Expected Start</dt><dd class="font-medium">{{ formatDate(cr.expectedStart) }}</dd></div>
+          <div class="flex justify-between"><dt class="text-muted-foreground">Expected Delivery</dt><dd class="font-medium">{{ formatDate(cr.expectedDelivery) }}</dd></div>
+        </dl>
+      </section>
+    }
+  </div>
+</div>

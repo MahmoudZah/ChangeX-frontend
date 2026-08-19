@@ -34,7 +34,7 @@ export class AuthService {
           name: 'Sarah Jenkins',
           email,
           role: 'Client',
-          company: 'Aurae Corporation',
+          company: 'Acme Corporation',
         };
 
     const token = `mock.${btoa(email)}.${Date.now()}`;

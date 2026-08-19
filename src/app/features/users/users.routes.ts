@@ -1,1 +1,9 @@
-﻿// Placeholder: export const USERS_ROUTES
+﻿import { Routes } from '@angular/router';
+
+export const USERS_ROUTES: Routes = [
+  {
+    path: '',
+    loadComponent: () =>
+      import('@/features/users/feature-user-list/user-list.component').then((m) => m.UserListComponent),
+  },
+];

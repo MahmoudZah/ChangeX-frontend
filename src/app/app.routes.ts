@@ -1,15 +1,61 @@
 import { Routes } from '@angular/router';
+import { authGuard } from '@/core/auth/auth.guard';
+import { roleGuard } from '@/core/auth/role.guard';
+import { ShellComponent } from '@/core/layout/shell/shell.component';
 
-/**
- * CRMS root routes — lazy-load each feature boundary.
- * Wire guards and loadChildren/loadComponent when implementing.
- *
- * Planned structure:
- * - /login → features/auth/feature-login
- * - / (ShellComponent + authGuard)
- *   - /clients → CLIENTS_ROUTES (Admin only)
- *   - /projects → PROJECTS_ROUTES
- *   - /change-requests → CR_ROUTES (default redirect)
- *   - /users → USERS_ROUTES (Admin only)
- */
-export const routes: Routes = [];
+export const routes: Routes = [
+  {
+    path: 'login',
+    loadChildren: () => import('@/features/auth/feature-login/login.routes').then((m) => m.LOGIN_ROUTES),
+  },
+  {
+    path: '',
+    component: ShellComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('@/features/dashboard/feature-dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'clients',
+        canActivate: [roleGuard(['Admin'])],
+        loadChildren: () => import('@/features/clients/clients.routes').then((m) => m.CLIENTS_ROUTES),
+      },
+      {
+        path: 'projects',
+        loadChildren: () => import('@/features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
+      },
+      {
+        path: 'change-requests',
+        loadChildren: () =>
+          import('@/features/change-requests/change-requests.routes').then((m) => m.CR_ROUTES),
+      },
+      {
+        path: 'approvals',
+        loadComponent: () =>
+          import('@/features/change-requests/feature-approvals-list/approvals-list.component').then(
+            (m) => m.ApprovalsListComponent,
+          ),
+      },
+      {
+        path: 'invoices',
+        loadComponent: () =>
+          import('@/features/invoices/feature-invoice-list/invoice-list.component').then((m) => m.InvoiceListComponent),
+      },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('@/features/account/feature-account/account.component').then((m) => m.AccountComponent),
+      },
+      {
+        path: 'users',
+        canActivate: [roleGuard(['Admin'])],
+        loadChildren: () => import('@/features/users/users.routes').then((m) => m.USERS_ROUTES),
+      },
+    ],
+  },
+  { path: '**', redirectTo: 'dashboard' },
+];

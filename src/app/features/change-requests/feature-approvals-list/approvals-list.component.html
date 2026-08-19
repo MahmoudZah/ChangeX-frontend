@@ -1,0 +1,44 @@
+<div class="mb-8">
+  <h1 class="text-3xl font-bold tracking-tight">Pending Approvals</h1>
+  <p class="mt-1 text-muted-foreground">Action needed on task estimates, deliverables, and complete development signs</p>
+</div>
+
+<div class="space-y-5">
+  @for (cr of pending(); track cr.id) {
+    <article class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <a [routerLink]="['/change-requests', cr.id]" class="text-lg font-bold hover:text-primary">{{ cr.code }}: {{ cr.title }}</a>
+          <p class="text-sm text-muted-foreground">Project: {{ cr.projectName }}</p>
+        </div>
+        <app-status-badge [status]="cr.status" />
+      </div>
+
+      <div class="mb-5 grid gap-4 rounded-xl bg-muted/40 p-4 md:grid-cols-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estimated Cost</p>
+          <p class="mt-1 text-lg font-bold">{{ formatCurrency(cr.estimatedCost) }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Effort Time</p>
+          <p class="mt-1 text-lg font-bold">{{ cr.estimatedHours ? cr.estimatedHours + ' Hours' : 'Completed' }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary Details</p>
+          <p class="mt-1 text-sm text-muted-foreground line-clamp-2">{{ cr.description }}</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-muted-foreground">• Awaiting client confirmation terms</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-rework hover:bg-status-rework/20">Request Rework</button>
+          <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10">Reject</button>
+          <button type="button" class="rounded-xl bg-approve px-4 py-2 text-sm font-semibold text-approve-foreground">Approve</button>
+        </div>
+      </div>
+    </article>
+  } @empty {
+    <p class="rounded-2xl border border-border bg-card p-8 text-center text-muted-foreground">No pending approvals right now.</p>
+  }
+</div>

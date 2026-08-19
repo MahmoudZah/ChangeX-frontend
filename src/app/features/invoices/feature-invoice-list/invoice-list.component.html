@@ -1,0 +1,23 @@
+<div class="mb-8">
+  <h1 class="text-3xl font-bold tracking-tight">Invoices</h1>
+  <p class="mt-1 text-muted-foreground">Review open and paid invoices tied to change requests</p>
+</div>
+
+<app-data-table [total]="invoices().length" [from]="1" [to]="invoices().length">
+  <tr header>
+    <th class="px-4 py-3">Invoice</th>
+    <th class="px-4 py-3">Change Request</th>
+    <th class="px-4 py-3">Amount</th>
+    <th class="px-4 py-3">Due Date</th>
+    <th class="px-4 py-3">Status</th>
+  </tr>
+  @for (inv of invoices(); track inv.id) {
+    <tr body class="border-t border-border hover:bg-muted/30">
+      <td class="px-4 py-3 font-semibold">{{ inv.id }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ inv.crCode }}</td>
+      <td class="px-4 py-3">{{ formatCurrency(inv.amount) }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ formatDate(inv.dueDate) }}</td>
+      <td class="px-4 py-3"><app-status-badge [status]="inv.state" /></td>
+    </tr>
+  }
+</app-data-table>
