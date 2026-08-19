@@ -1,1 +1,7 @@
-﻿// Placeholder: Client interface { id, name, email, contactInfo }
+﻿export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  contactInfo: string;
+  projectCount: number;
+}

@@ -1,1 +1,11 @@
-﻿// Placeholder: Project interface { id, name, description, scope, userId, state }
+﻿export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  scope: string;
+  userId: string;
+  clientId: string;
+  state: 'Active' | 'Inactive';
+  changeRequestCount: number;
+  lastUpdated: string;
+}

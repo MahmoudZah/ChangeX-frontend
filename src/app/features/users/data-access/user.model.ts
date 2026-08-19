@@ -1,1 +1,8 @@
-﻿// Placeholder: User interface { id, name, email, role, clientId }
+﻿export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Client';
+  clientId: string | null;
+  company: string;
+}
