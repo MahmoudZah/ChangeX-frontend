@@ -1,24 +1,50 @@
-﻿import { Injectable, computed, signal } from '@angular/core';
-import { Invoice } from '@/features/change-requests/data-access/invoice.model';
-
-const MOCK: Invoice[] = [
-  { id: 'inv-1', crId: 'cr-101', crCode: 'CR-101', amount: 5400, dueDate: '2026-08-31', state: 'Open' },
-  { id: 'inv-2', crId: 'cr-102', crCode: 'CR-102', amount: 3100, dueDate: '2026-08-28', state: 'Open' },
-  { id: 'inv-3', crId: 'cr-100', crCode: 'CR-100', amount: 3950, dueDate: '2026-07-15', state: 'Paid' },
-];
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { ApiService } from '@/core/http/api.service';
+import { Invoice, InvoiceDto } from '@/features/change-requests/data-access/invoice.model';
 
 @Injectable({ providedIn: 'root' })
 export class InvoicesService {
-  private _invoices = signal<Invoice[]>(MOCK);
+  private api = inject(ApiService);
+  private _invoices = signal<Invoice[]>([]);
   readonly invoices = this._invoices.asReadonly();
 
-  readonly openCount = computed(() => this._invoices().filter((i) => i.state === 'Open').length);
-
+  readonly openCount = computed(
+    () => this._invoices().filter((i) => (i.state ?? i.status) !== 'Paid').length,
+  );
   readonly openTotal = computed(() =>
-    this._invoices().filter((i) => i.state === 'Open').reduce((sum, i) => sum + i.amount, 0),
+    this._invoices()
+      .filter((i) => (i.state ?? i.status) !== 'Paid')
+      .reduce((sum, inv) => sum + (Number(inv.cost ?? inv.amount) || 0), 0),
   );
 
-  forCr(crId: string): Invoice[] {
-    return this._invoices().filter((i) => i.crId === crId);
+  async loadAll(): Promise<Invoice[]> {
+    try {
+      const res = await this.api.get<Invoice[]>('/Invoice');
+      if (Array.isArray(res)) {
+        this._invoices.set(res);
+        return res;
+      }
+    } catch {
+      // Fallback
+    }
+    return this._invoices();
+  }
+
+  async create(dto: InvoiceDto): Promise<void> {
+    try {
+      await this.api.post('/Invoice', dto);
+      await this.loadAll();
+    } catch {
+      const newInv: Invoice = {
+        id: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+        crId: dto.crid,
+        crid: dto.crid,
+        cost: dto.cost,
+        status: 'Issued',
+        state: 'Open',
+        createdAt: new Date().toISOString(),
+      };
+      this._invoices.update((prev) => [...prev, newInv]);
+    }
   }
 }

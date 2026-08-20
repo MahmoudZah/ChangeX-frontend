@@ -9,7 +9,7 @@
     <div class="min-w-0 flex-1">
       <h1 class="text-3xl font-bold tracking-tight">{{ item.code }}: {{ item.title }}</h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        Project: {{ item.projectName }} • Created {{ formatDate(item.createdAt) }}
+        Project: {{ item.projectName }} • Started {{ formatDate(item.startDate) }}
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -50,7 +50,7 @@
     }
   }
 
-  @if (item.status === 'Pending Estimate' || item.status === 'Estimate Approval') {
+  @if (item.status === 'Pending Client Approval' || item.status === 'Pending Customer Approval') {
     <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card px-6 py-4 shadow-sm">
       <p class="text-sm font-medium text-muted-foreground">Client Approval Required</p>
       <div class="flex gap-3">

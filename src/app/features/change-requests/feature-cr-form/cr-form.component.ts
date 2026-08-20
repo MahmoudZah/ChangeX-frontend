@@ -1,8 +1,9 @@
-﻿import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CrsService } from '@/features/change-requests/data-access/crs.service';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
+import { StatusesService } from '@/features/change-requests/data-access/statuses.service';
 import { FormFieldComponent } from '@/shared/ui/form-field/form-field.component';
 import { PRIORITIES, Priority } from '@/shared/util/constants';
 
@@ -15,35 +16,46 @@ import { PRIORITIES, Priority } from '@/shared/util/constants';
 export class CrFormComponent implements OnInit {
   private crs = inject(CrsService);
   private projects = inject(ProjectsService);
+  private statuses = inject(StatusesService);
   private router = inject(Router);
 
   readonly priorities = PRIORITIES;
   readonly projectList = this.projects.projects;
 
   title = '';
-  projectId = 'p1';
+  projectId = '';
   priority: Priority = 'High';
   description = '';
   scope = '';
   ticketComment = '';
-  attachmentName = signal('checkout-wireframe.pdf');
+  submitting = signal(false);
+  attachmentName = signal('');
 
   ngOnInit(): void {
     void this.projects.loadAll();
   }
 
-  submit(): void {
-    const project = this.projects.getById(this.projectId);
-    const created = this.crs.create({
-      title: this.title,
-      projectId: this.projectId,
-      projectName: project?.name,
-      priority: this.priority,
-      description: this.description,
-      scope: this.scope.split('\n').map((s) => s.trim()).filter(Boolean),
-      businessRationale: this.ticketComment || undefined,
-    });
-    void this.router.navigate(['/change-requests', created.id]);
+  async submit(): Promise<void> {
+    if (this.submitting()) return;
+    this.submitting.set(true);
+    try {
+      const defaultStatus = this.statuses.getDefaultInitialStatus();
+      const created = await this.crs.create({
+        name: this.title,
+        priority: this.priority,
+        scope: this.scope,
+        description: this.description,
+        estimatedManHour: 0,
+        manHourRate: 150,
+        startDate: new Date().toISOString(),
+        finishDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        currentStatusID: defaultStatus.id,
+        projectID: this.projectId,
+      });
+      void this.router.navigate(['/change-requests', created.id]);
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   cancel(): void {

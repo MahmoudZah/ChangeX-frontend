@@ -1,228 +1,171 @@
-﻿import { Injectable, computed, signal } from '@angular/core';
-import { ChangeRequest } from '@/features/change-requests/data-access/cr.model';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { ApiService } from '@/core/http/api.service';
+import { ChangeRequest, CRDto } from '@/features/change-requests/data-access/cr.model';
 
-const MOCK: ChangeRequest[] = [
-  {
-    id: 'cr-104',
-    code: 'CR-104',
-    title: 'HubSpot Synchronizer Pipeline',
-    projectId: 'p1',
-    projectName: 'E-Commerce Replatform',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'High',
-    status: 'Pending Estimate',
-    stage: 'Estimating',
-    estimatedCost: 4250,
-    estimatedHours: 34,
-    hourlyRate: 125,
-    description:
-      'Build a reliable synchronizer pipeline between the commerce platform and HubSpot CRM so marketing and sales teams receive accurate customer and order data in near real time.',
-    scope: [
-      'HubSpot CRM Contact API mapping',
-      'Order lifecycle webhook handlers',
-      'Retry queue for failed sync events',
-      'Admin visibility into last sync status',
-    ],
-    businessRationale: 'Marketing needs accurate lifecycle data for segmentation and campaign triggers.',
-    expectedStart: '2024-11-04',
-    expectedDelivery: '2024-11-15',
-    lastUpdated: '2026-08-19T08:00:00Z',
-    createdAt: '2024-10-24T10:00:00Z',
-    daysOpen: 2,
-  },
-  {
-    id: 'cr-103',
-    code: 'CR-103',
-    title: 'Checkout Apple Pay Support',
-    projectId: 'p1',
-    projectName: 'E-Commerce Replatform',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'Critical',
-    status: 'Under Review',
-    stage: 'Reviewing',
-    estimatedCost: 6800,
-    estimatedHours: 52,
-    hourlyRate: 125,
-    description: 'Add Apple Pay as a first-class payment option in checkout with device and browser fallbacks.',
-    scope: ['Apple Pay merchant validation', 'Checkout UI updates', 'Payment reconciliation hooks'],
-    lastUpdated: '2026-08-18T14:00:00Z',
-    createdAt: '2026-08-10T09:00:00Z',
-    daysOpen: 1,
-  },
-  {
-    id: 'cr-102',
-    code: 'CR-102',
-    title: 'Product Recommendations Widget',
-    projectId: 'p1',
-    projectName: 'E-Commerce Replatform',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'Medium',
-    status: 'Accepted',
-    stage: 'Scheduled',
-    estimatedCost: 3100,
-    estimatedHours: 24,
-    hourlyRate: 125,
-    description: 'Personalized recommendations on PDP and cart based on browsing history and inventory signals.',
-    scope: ['Recommendation service integration', 'PDP widget', 'Analytics events'],
-    lastUpdated: '2026-08-17T11:00:00Z',
-    createdAt: '2026-08-01T09:00:00Z',
-    daysOpen: 4,
-  },
-  {
-    id: 'cr-101',
-    code: 'CR-101',
-    title: 'Gift Card Redemption Flow',
-    projectId: 'p1',
-    projectName: 'E-Commerce Replatform',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'High',
-    status: 'Implemented',
-    stage: 'Completed',
-    estimatedCost: 5400,
-    estimatedHours: 42,
-    hourlyRate: 125,
-    description: 'Allow customers to apply gift cards during checkout with partial redemption support.',
-    scope: ['Balance lookup API', 'Checkout validation', 'Refund handling'],
-    lastUpdated: '2026-08-16T16:00:00Z',
-    createdAt: '2026-07-20T09:00:00Z',
-    daysOpen: 16,
-  },
-  {
-    id: 'cr-100',
-    code: 'CR-100',
-    title: 'Legacy Coupon Migration',
-    projectId: 'p2',
-    projectName: 'Marketing Website Refresh',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'Low',
-    status: 'Rejected',
-    stage: 'Archived',
-    estimatedCost: 1800,
-    estimatedHours: 14,
-    hourlyRate: 125,
-    description: 'Migrate legacy coupon codes into the new promotion engine.',
-    scope: ['Coupon import script', 'Validation rules mapping'],
-    lastUpdated: '2026-08-15T10:00:00Z',
-    createdAt: '2026-07-15T09:00:00Z',
-    daysOpen: 8,
-  },
-  {
-    id: 'cr-99',
-    code: 'CR-99',
-    title: 'Support Portal SSO',
-    projectId: 'p3',
-    projectName: 'Internal Tools Portal',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'High',
-    status: 'Estimate Approval',
-    stage: 'Estimating',
-    estimatedCost: 3900,
-    estimatedHours: 30,
-    hourlyRate: 125,
-    description: 'Single sign-on between the commerce account and the internal support portal.',
-    scope: ['SAML integration', 'Session handoff', 'Role mapping'],
-    lastUpdated: '2026-08-19T07:00:00Z',
-    createdAt: '2026-08-12T09:00:00Z',
-    daysOpen: 2,
-  },
-  {
-    id: 'cr-98',
-    code: 'CR-98',
-    title: 'UAT Regression Pack',
-    projectId: 'p1',
-    projectName: 'E-Commerce Replatform',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'Medium',
-    status: 'Testing/UAT Signoff',
-    stage: 'Reviewing',
-    estimatedCost: 2100,
-    estimatedHours: 0,
-    hourlyRate: 125,
-    description: 'Final UAT signoff for checkout and payment regression scenarios.',
-    scope: ['Test case execution', 'Defect triage', 'Signoff documentation'],
-    lastUpdated: '2026-08-18T09:00:00Z',
-    createdAt: '2026-08-05T09:00:00Z',
-    daysOpen: 1,
-  },
-  {
-    id: 'cr-97',
-    code: 'CR-97',
-    title: 'Inventory Alert Webhooks',
-    projectId: 'p3',
-    projectName: 'Internal Tools Portal',
-    clientId: 'c1',
-    clientName: 'Acme Corporation',
-    priority: 'Critical',
-    status: 'Delayed',
-    stage: 'Researching',
-    estimatedCost: 0,
-    estimatedHours: 0,
-    hourlyRate: 125,
-    description: 'Notify ops when SKU inventory crosses configured thresholds.',
-    scope: ['Webhook dispatcher', 'Threshold configuration UI'],
-    lastUpdated: '2026-08-14T12:00:00Z',
-    createdAt: '2026-07-28T09:00:00Z',
-    daysOpen: 16,
-  },
-];
+interface ApiResponse<T> {
+  message?: string;
+  data?: T;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CrsService {
-  private _crs = signal<ChangeRequest[]>(MOCK);
+  private api = inject(ApiService);
+  private _crs = signal<ChangeRequest[]>([]);
+  private _loading = signal<boolean>(false);
+  private _error = signal<string | null>(null);
+
   readonly crs = this._crs.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
 
   readonly pendingApprovals = computed(() =>
-    this._crs().filter((cr) =>
-      ['Estimate Approval', 'Testing/UAT Signoff', 'Pending Estimate'].includes(cr.status),
+    this._crs().filter(
+      (c) =>
+        c.currentStatusName.toLowerCase().includes('approval') ||
+        c.currentStatusName.toLowerCase().includes('client'),
     ),
   );
 
-  readonly activeCount = computed(() =>
-    this._crs().filter((cr) => ['Accepted', 'Under Review', 'In Progress'].includes(cr.status)).length,
-  );
+  async loadAll(projectId?: string, statusId?: string, name?: string): Promise<ChangeRequest[]> {
+    this._loading.set(true);
+    this._error.set(null);
+    try {
+      const params: Record<string, string | undefined> = {};
+      if (projectId) params['projectId'] = projectId;
+      if (statusId) params['statusId'] = statusId;
+      if (name) params['name'] = name;
 
-  async loadAll(): Promise<void> {
-    this._crs.set(MOCK);
+      const res = await this.api.get<ApiResponse<ChangeRequest[]> | ChangeRequest[]>('/CR', params);
+      const rawList = Array.isArray(res) ? res : (res as ApiResponse<ChangeRequest[]>).data ?? [];
+      const list = (rawList as unknown as Record<string, unknown>[]).map((item) => this.normalizeCR(item));
+      this._crs.set(list);
+      return list;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load Change Requests';
+      this._error.set(msg);
+      console.error('CrsService.loadAll error:', err);
+      return [];
+    } finally {
+      this._loading.set(false);
+    }
   }
 
-  getById(id: string): ChangeRequest | undefined {
-    return this._crs().find((cr) => cr.id === id);
+  async getById(id: string): Promise<ChangeRequest | null> {
+    try {
+      const res = await this.api.get<ApiResponse<ChangeRequest> | ChangeRequest>(`/CR/${id}`);
+      const raw = (res as ApiResponse<ChangeRequest>).data ?? (res as ChangeRequest);
+      return raw ? this.normalizeCR(raw as unknown as Record<string, unknown>) : null;
+    } catch (err) {
+      console.error(`CrsService.getById(${id}) error:`, err);
+      return null;
+    }
   }
 
-  getByProject(projectId: string): ChangeRequest[] {
-    return this._crs().filter((cr) => cr.projectId === projectId);
+  async create(dto: CRDto): Promise<ChangeRequest> {
+    this._loading.set(true);
+    try {
+      const res = await this.api.post<ApiResponse<ChangeRequest> | ChangeRequest>('/CR', dto);
+      const raw = (res as ApiResponse<ChangeRequest>).data ?? (res as ChangeRequest);
+      const created = this.normalizeCR(raw as unknown as Record<string, unknown>);
+      await this.loadAll();
+      return created;
+    } finally {
+      this._loading.set(false);
+    }
   }
 
-  create(payload: Partial<ChangeRequest>): ChangeRequest {
-    const next: ChangeRequest = {
-      id: `cr-${Date.now()}`,
-      code: `CR-${100 + this._crs().length}`,
-      title: payload.title ?? 'Untitled',
-      projectId: payload.projectId ?? 'p1',
-      projectName: payload.projectName ?? 'E-Commerce Replatform',
-      clientId: 'c1',
-      clientName: 'Acme Corporation',
-      priority: payload.priority ?? 'Medium',
-      status: 'Pending Estimate',
-      stage: 'Estimating',
-      estimatedCost: 0,
-      estimatedHours: 0,
-      hourlyRate: 125,
-      description: payload.description ?? '',
-      scope: payload.scope ?? [],
-      businessRationale: payload.businessRationale,
-      lastUpdated: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      daysOpen: 0,
+  async update(id: string, dto: CRDto): Promise<ChangeRequest> {
+    this._loading.set(true);
+    try {
+      const res = await this.api.put<ApiResponse<ChangeRequest> | ChangeRequest>(`/CR/${id}`, dto);
+      const raw = (res as ApiResponse<ChangeRequest>).data ?? (res as ChangeRequest);
+      const updated = this.normalizeCR(raw as unknown as Record<string, unknown>);
+      await this.loadAll();
+      return updated;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    this._loading.set(true);
+    try {
+      await this.api.delete(`/CR/${id}`);
+      this._crs.update((prev) => prev.filter((c) => c.id !== id));
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  async changeStatus(crId: string, newStatusId: string): Promise<void> {
+    this._loading.set(true);
+    try {
+      await this.api.put(`/CR/change_status/${newStatusId}`, { CRID: crId });
+      await this.loadAll();
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  private normalizeCR(raw: Record<string, unknown>): ChangeRequest {
+    const id = String(raw['id'] ?? raw['ID'] ?? '');
+    const name = String(raw['name'] ?? raw['Name'] ?? raw['title'] ?? 'Change Request');
+    const hours = Number(raw['estimatedManHour'] ?? raw['EstimatedManHour'] ?? 0);
+    const rate = Number(raw['manHourRate'] ?? raw['ManHourRate'] ?? 150);
+    const cost = hours * rate;
+    const statusName = String(
+      raw['currentStatusName'] ?? raw['CurrentStatusName'] ?? raw['status'] ?? 'Pending Vendor FeedBack',
+    );
+    const startDate = String(raw['startDate'] ?? raw['StartDate'] ?? '');
+    const finishDate = String(raw['finishDate'] ?? raw['FinishDate'] ?? '');
+
+    let daysOpen = 1;
+    if (startDate) {
+      const diff = Math.max(0, Date.now() - new Date(startDate).getTime());
+      daysOpen = Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+    }
+
+    const shortId = id.length > 4 ? id.substring(0, 4).toUpperCase() : '001';
+
+    // scope may come as comma-separated or newline-separated string from backend
+    const rawScope = raw['scope'] ?? raw['Scope'] ?? '';
+    const scopeArr: string[] =
+      typeof rawScope === 'string' && rawScope
+        ? rawScope
+            .split(/[,\n]/)
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [];
+
+    return {
+      id,
+      name,
+      title: name,
+      code: `CR-${shortId}`,
+      priority: String(raw['priority'] ?? raw['Priority'] ?? 'Medium'),
+      scope: scopeArr,
+      description: String(raw['description'] ?? raw['Description'] ?? ''),
+      estimatedManHour: hours,
+      estimatedHours: hours,
+      hourlyRate: rate,
+      manHourRate: rate,
+      totalCost: cost,
+      estimatedCost: cost,
+      startDate,
+      finishDate,
+      expectedStart: startDate,
+      expectedDelivery: finishDate,
+      currentStatusID: String(raw['currentStatusID'] ?? raw['CurrentStatusID'] ?? ''),
+      currentStatusName: statusName,
+      status: statusName,
+      stage: statusName,
+      projectID: String(raw['projectID'] ?? raw['ProjectID'] ?? raw['projectId'] ?? ''),
+      projectId: String(raw['projectID'] ?? raw['ProjectID'] ?? raw['projectId'] ?? ''),
+      projectName: String(raw['projectName'] ?? raw['ProjectName'] ?? ''),
+      clientId: String(raw['clientId'] ?? raw['ClientID'] ?? ''),
+      clientName: String(raw['clientName'] ?? raw['ClientName'] ?? ''),
+      daysOpen,
+      lastUpdated: String(finishDate || new Date().toISOString()),
     };
-    this._crs.update((list) => [next, ...list]);
-    return next;
   }
 }

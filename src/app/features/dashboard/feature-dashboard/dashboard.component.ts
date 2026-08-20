@@ -41,10 +41,10 @@ export class DashboardComponent implements OnInit {
   readonly adminFiltered = computed(() => {
     const tab = this.adminTab();
     const list = this.crs.crs();
-    if (tab === 'estimating') return list.filter((cr) => cr.stage === 'Estimating');
-    if (tab === 'signoff') return list.filter((cr) => cr.status.includes('Signoff'));
-    if (tab === 'delayed') return list.filter((cr) => cr.status === 'Delayed');
-    return list.filter((cr) => cr.status === 'Draft');
+    if (tab === 'estimating') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('estimat'));
+    if (tab === 'signoff') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('signoff'));
+    if (tab === 'delayed') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('delayed'));
+    return list;
   });
 
   ngOnInit(): void {

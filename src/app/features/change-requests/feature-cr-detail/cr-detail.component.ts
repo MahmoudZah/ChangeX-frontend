@@ -1,4 +1,4 @@
-﻿import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CrsService } from '@/features/change-requests/data-access/crs.service';
 import { ChangeRequest } from '@/features/change-requests/data-access/cr.model';
@@ -29,13 +29,17 @@ export class CrDetailComponent implements OnInit {
   private crs = inject(CrsService);
 
   readonly formatDate = formatDate;
-  cr = signal<ChangeRequest | undefined>(undefined);
+  cr = signal<ChangeRequest | null>(null);
   tab = signal<Tab>('overview');
-  attachmentCount = signal(2);
+  attachmentCount = signal(0);
 
   ngOnInit(): void {
-    void this.crs.loadAll();
     const id = this.route.snapshot.paramMap.get('id') ?? '';
-    this.cr.set(this.crs.getById(id));
+    void this.loadCr(id);
+  }
+
+  private async loadCr(id: string): Promise<void> {
+    const found = await this.crs.getById(id);
+    this.cr.set(found);
   }
 }

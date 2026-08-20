@@ -14,10 +14,10 @@
   @for (inv of invoices(); track inv.id) {
     <tr body class="border-t border-border hover:bg-muted/30">
       <td class="px-4 py-3 font-semibold">{{ inv.id }}</td>
-      <td class="px-4 py-3 text-muted-foreground">{{ inv.crCode }}</td>
-      <td class="px-4 py-3">{{ formatCurrency(inv.amount) }}</td>
-      <td class="px-4 py-3 text-muted-foreground">{{ formatDate(inv.dueDate) }}</td>
-      <td class="px-4 py-3"><app-status-badge [status]="inv.state" /></td>
+      <td class="px-4 py-3 text-muted-foreground">{{ inv.crCode ?? inv.crId }}</td>
+      <td class="px-4 py-3">{{ formatCurrency(inv.amount ?? inv.cost ?? 0) }}</td>
+      <td class="px-4 py-3 text-muted-foreground">{{ formatDate(inv.dueDate ?? inv.createdAt ?? '') }}</td>
+      <td class="px-4 py-3"><app-status-badge [status]="inv.state ?? inv.status ?? 'Open'" /></td>
     </tr>
   }
 </app-data-table>
