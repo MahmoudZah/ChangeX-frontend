@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { AuthService } from '@/core/auth/auth.service';
 import { ApiEnvelope, ApiMessage, apiErrorMessage } from '@/core/http/api-contract';
 import { ApiService } from '@/core/http/api.service';
 import { Client, ClientDto, ClientResponseDto } from '@/features/clients/data-access/client.model';
@@ -6,6 +7,7 @@ import { Client, ClientDto, ClientResponseDto } from '@/features/clients/data-ac
 @Injectable({ providedIn: 'root' })
 export class ClientsService {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private _clients = signal<Client[]>([]);
   private _loading = signal(false);
   private _error = signal('');
@@ -20,8 +22,12 @@ export class ClientsService {
     this._loading.set(true);
     this._error.set('');
     try {
-      const response = await this.api.get<ApiEnvelope<ClientResponseDto[]>>('/Client');
-      const clients = response.data.map((item) => this.normalize(item));
+      const currentClientId = this.auth.user()?.clientId;
+      const clients = this.auth.isAdmin()
+        ? (await this.api.get<ApiEnvelope<ClientResponseDto[]>>('/Client/GetAllClients')).data.map((item) => this.normalize(item))
+        : currentClientId
+          ? [this.normalize((await this.api.get<ApiEnvelope<ClientResponseDto>>(`/Client/GetClient/${currentClientId}`)).data)]
+          : [];
       this._clients.set(clients);
       return clients;
     } catch (error) {
@@ -40,7 +46,16 @@ export class ClientsService {
   async loadById(id: string): Promise<Client | null> {
     this._error.set('');
     try {
-      const response = await this.api.get<ApiEnvelope<ClientResponseDto>>(`/Client/${id}`);
+      if (this.auth.isAdmin()) {
+        const cached = this.getById(id);
+        if (cached) return cached;
+        const clients = await this.loadAll();
+        if (this._error()) throw new Error(this._error());
+        return clients.find((client) => client.id === id) ?? null;
+      }
+
+      if (id !== this.auth.user()?.clientId) return null;
+      const response = await this.api.get<ApiEnvelope<ClientResponseDto>>(`/Client/GetClient/${id}`);
       const client = this.normalize(response.data);
       this._clients.update((current) => [...current.filter((item) => item.id !== id), client]);
       return client;
@@ -61,7 +76,7 @@ export class ClientsService {
     form.append('Address', dto.address ?? '');
     if (dto.defaultContactID) form.append('DefaultContactID', dto.defaultContactID);
 
-    const response = await this.api.post<ApiEnvelope<ClientResponseDto>>('/Client', form);
+    const response = await this.api.post<ApiEnvelope<ClientResponseDto>>('/Client/AddClient', form);
     const client = this.normalize(response.data);
     this._clients.update((current) => [...current, client]);
     this._lastMessage.set(response.message);
@@ -70,7 +85,7 @@ export class ClientsService {
 
   async update(id: string, dto: ClientDto): Promise<Client> {
     this._lastMessage.set('');
-    const response = await this.api.put<ApiEnvelope<ClientResponseDto>>(`/Client/${id}`, dto);
+    const response = await this.api.put<ApiEnvelope<ClientResponseDto>>(`/Client/UpdateClient/${id}`, dto);
     const client = this.normalize(response.data);
     this._clients.update((current) => current.map((item) => item.id === id ? client : item));
     this._lastMessage.set(response.message);
@@ -79,7 +94,7 @@ export class ClientsService {
 
   async delete(id: string): Promise<string> {
     this._lastMessage.set('');
-    const response = await this.api.delete<ApiMessage>(`/Client/${id}`);
+    const response = await this.api.delete<ApiMessage>(`/Client/DeleteClient/${id}`);
     this._clients.update((current) => current.filter((client) => client.id !== id));
     this._lastMessage.set(response.message);
     return response.message;

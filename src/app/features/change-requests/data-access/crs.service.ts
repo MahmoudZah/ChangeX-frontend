@@ -42,9 +42,7 @@ export class CrsService {
       return crs;
     } catch (error) {
       this._crs.set([]);
-      this._error.set((error as { status?: number }).status === 403
-        ? 'The backend currently rejects the CR list for issued JWT roles because its list authorization expects a different role casing.'
-        : apiErrorMessage(error, 'Change requests could not be loaded from the API.'));
+      this._error.set(apiErrorMessage(error, 'Change requests could not be loaded from the API.'));
       return [];
     } finally {
       this._loading.set(false);

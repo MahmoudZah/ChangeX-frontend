@@ -12,7 +12,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.endsWith('/Auth/Login') && auth.isAuthenticated()) {
+      const isAuthenticationChallenge = Boolean(error.headers.get('www-authenticate'));
+      if (
+        error.status === 401 &&
+        isAuthenticationChallenge &&
+        !req.url.endsWith('/Auth/Login') &&
+        auth.isAuthenticated()
+      ) {
         const returnUrl = router.url.startsWith('/login') ? '/dashboard' : router.url;
         auth.logout();
         void router.navigate(['/login'], { queryParams: { returnUrl, expired: '1' } });

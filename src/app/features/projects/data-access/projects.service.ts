@@ -1,14 +1,14 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { ApiEnvelope, SerializedTask, apiErrorMessage } from '@/core/http/api-contract';
+import { AuthService } from '@/core/auth/auth.service';
+import { ApiEnvelope, ApiMessage, apiErrorMessage } from '@/core/http/api-contract';
 import { ApiService } from '@/core/http/api.service';
 import { ClientsService } from '@/features/clients/data-access/clients.service';
 import { Project, ProjectDto, ProjectResponseDto, ProjectState } from '@/features/projects/data-access/project.model';
 
-type ProjectTaskEnvelope<T> = ApiEnvelope<SerializedTask<T>>;
-
 @Injectable({ providedIn: 'root' })
 export class ProjectsService {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private clients = inject(ClientsService);
   private _projects = signal<Project[]>([]);
   private _loading = signal(false);
@@ -25,10 +25,13 @@ export class ProjectsService {
     this._error.set('');
     try {
       const [response] = await Promise.all([
-        this.api.get<ProjectTaskEnvelope<ProjectResponseDto[]>>('/ProjectAdmin'),
+        this.api.get<ProjectResponseDto[]>('/Project/GetAllProjects'),
         this.clients.loadAll(),
       ]);
-      const projects = response.data.result.map((item) => this.normalize(item));
+      const authenticatedClientId = this.auth.user()?.clientId;
+      const projects = response
+        .map((item) => this.normalize(item))
+        .filter((project) => this.auth.isAdmin() || project.clientId === authenticatedClientId);
       this._projects.set(projects);
       return clientId ? projects.filter((project) => project.clientId === clientId) : projects;
     } catch (error) {
@@ -48,9 +51,9 @@ export class ProjectsService {
     this._error.set('');
     try {
       if (!this.clients.clients().length) await this.clients.loadAll();
-      const response = await this.api.get<ProjectTaskEnvelope<ProjectResponseDto | null>>(`/ProjectAdmin/${id}`);
-      if (!response.data.result) return null;
-      const project = this.normalize(response.data.result);
+      const response = await this.api.get<ProjectResponseDto>(`/Project/GetProject/${id}`);
+      const project = this.normalize(response);
+      if (!this.auth.isAdmin() && project.clientId !== this.auth.user()?.clientId) return null;
       this._projects.update((current) => [...current.filter((item) => item.id !== id), project]);
       return project;
     } catch (error) {
@@ -61,8 +64,8 @@ export class ProjectsService {
 
   async create(dto: ProjectDto): Promise<Project> {
     this._lastMessage.set('');
-    const response = await this.api.post<ProjectTaskEnvelope<ProjectResponseDto>>('/ProjectAdmin', dto);
-    const project = this.normalize(response.data.result);
+    const response = await this.api.post<ApiEnvelope<ProjectResponseDto>>('/Project/AddProject', dto);
+    const project = this.normalize(response.data);
     this._projects.update((current) => [...current, project]);
     this._lastMessage.set(response.message);
     return project;
@@ -70,9 +73,8 @@ export class ProjectsService {
 
   async update(id: string, dto: ProjectDto): Promise<Project> {
     this._lastMessage.set('');
-    const response = await this.api.put<ProjectTaskEnvelope<ProjectResponseDto | null>>(`/ProjectAdmin/${id}`, dto);
-    if (!response.data.result) throw new Error('The project no longer exists.');
-    const project = this.normalize(response.data.result);
+    const response = await this.api.put<ApiEnvelope<ProjectResponseDto>>(`/Project/UpdateProject/${id}`, dto);
+    const project = this.normalize(response.data);
     this._projects.update((current) => current.map((item) => item.id === id ? project : item));
     this._lastMessage.set(response.message);
     return project;
@@ -80,23 +82,10 @@ export class ProjectsService {
 
   async delete(id: string): Promise<string> {
     this._lastMessage.set('');
-    let controllerError: unknown;
-    try {
-      await this.api.delete<ApiEnvelope<never>>(`/ProjectAdmin/${id}`);
-    } catch (error) {
-      controllerError = error;
-      if ((error as { status?: number }).status !== 404) throw error;
-    }
-
-    const projects = await this.loadAll();
-    if (this._error()) throw controllerError ?? new Error(this._error());
-    if (projects.some((project) => project.id === id)) {
-      throw controllerError ?? new Error('The API did not delete the project.');
-    }
-
-    const message = 'Project deleted successfully.';
-    this._lastMessage.set(message);
-    return message;
+    const response = await this.api.delete<ApiMessage>(`/Project/DeleteProject/${id}`);
+    this._projects.update((current) => current.filter((project) => project.id !== id));
+    this._lastMessage.set(response.message);
+    return response.message;
   }
 
   private normalize(raw: ProjectResponseDto): Project {

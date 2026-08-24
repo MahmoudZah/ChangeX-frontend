@@ -9,13 +9,13 @@ export const PROJECTS_ROUTES: Routes = [
   },
   {
     path: 'new',
-    canActivate: [roleGuard(['Admin'])],
+    canActivate: [roleGuard(['Admin', 'UserAdmin'])],
     loadComponent: () =>
       import('@/features/projects/feature-project-form/project-form.component').then((m) => m.ProjectFormComponent),
   },
   {
     path: ':id/edit',
-    canActivate: [roleGuard(['Admin'])],
+    canActivate: [roleGuard(['Admin', 'UserAdmin'])],
     loadComponent: () =>
       import('@/features/projects/feature-project-form/project-form.component').then((m) => m.ProjectFormComponent),
   },

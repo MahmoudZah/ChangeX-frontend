@@ -2,7 +2,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '@/core/http/api.service';
-import { ServiceResponse } from '@/core/http/api-contract';
 import { Role, STORAGE_KEYS } from '@/shared/util/constants';
 
 export interface AuthUser {
@@ -16,7 +15,7 @@ export interface AuthUser {
 }
 
 interface LoginResponse {
-  token: ServiceResponse<string>;
+  token: string;
 }
 
 interface LoginRequest {
@@ -38,6 +37,7 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._token() && !!this._user());
   readonly isAdmin = computed(() => this._user()?.role === 'Admin');
   readonly isClientUser = computed(() => ['UserAdmin', 'User'].includes(this._user()?.role ?? ''));
+  readonly canManageProjects = computed(() => ['Admin', 'UserAdmin'].includes(this._user()?.role ?? ''));
   readonly loginError = this._loginError.asReadonly();
 
   constructor() {
@@ -49,12 +49,12 @@ export class AuthService {
     try {
       const payload: LoginRequest = { email, password };
       const response = await this.api.post<LoginResponse>('/Auth/Login', payload);
-      if (!response.token?.success || !response.token.data) {
-        this._loginError.set(response.token?.message?.trim() || 'Invalid email or password.');
+      const token = response.token?.trim();
+      if (!token) {
+        this._loginError.set('The API returned an invalid authentication token.');
         return false;
       }
 
-      const token = response.token.data;
       const claims = this.decodeJwt(token);
       const id = this.readClaim(claims, 'userid', 'nameidentifier', 'sub');
       const name = this.readClaim(claims, 'name', 'unique_name') || email.split('@')[0];
@@ -87,7 +87,7 @@ export class AuthService {
       this._loginError.set(
         httpError && (httpError.status === 0 || [502, 503, 504].includes(httpError.status))
           ? 'Cannot connect to the API. Make sure the backend is running.'
-          : errorBody?.token?.message?.trim() || errorBody?.message || 'Invalid email or password.',
+          : errorBody?.message || 'Invalid email or password.',
       );
       return false;
     }
@@ -211,18 +211,9 @@ export class AuthService {
     }
   }
 
-  private loginErrorBody(value: unknown): { message?: string; token?: ServiceResponse<string> } | null {
+  private loginErrorBody(value: unknown): { message?: string } | null {
     if (!this.isRecord(value)) return null;
-    const tokenValue = value['token'];
-    const token = this.isRecord(tokenValue) && typeof tokenValue['message'] === 'string'
-      ? {
-          success: Boolean(tokenValue['success']),
-          message: tokenValue['message'],
-          data: typeof tokenValue['data'] === 'string' ? tokenValue['data'] : null,
-          statusCode: Number(tokenValue['statusCode'] ?? 0),
-        }
-      : undefined;
-    return { message: this.stringValue(value['message']) || undefined, token };
+    return { message: this.stringValue(value['message']) || undefined };
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {

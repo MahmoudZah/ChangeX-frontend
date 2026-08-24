@@ -38,7 +38,7 @@ export class StatusesService {
     this._error.set('');
     try {
       const [currentResponse, availableResponse] = await Promise.all([
-        this.api.get<ApiEnvelope<CRStatusDto>>(`/Status/cr/${crId}`),
+        this.api.get<ApiEnvelope<CRStatusDto>>(`/Status/CR/${crId}`),
         this.api.get<ApiEnvelope<string[]>>(`/Status/cr/${crId}/available`),
       ]);
       const current = currentResponse.data;

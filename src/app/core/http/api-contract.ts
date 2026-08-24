@@ -9,22 +9,6 @@ export interface ApiMessage {
   message: string;
 }
 
-export interface ServiceResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-  statusCode: number;
-}
-
-export interface SerializedTask<T> {
-  result: T;
-  status: number;
-  isCanceled: boolean;
-  isCompleted: boolean;
-  isCompletedSuccessfully: boolean;
-  isFaulted: boolean;
-}
-
 interface ValidationProblem {
   detail?: string;
   message?: string;
