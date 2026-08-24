@@ -35,10 +35,6 @@ export class CrFormComponent implements OnInit {
   priority: Priority = 'Medium';
   description = '';
   scope = '';
-  estimatedManHour = 0;
-  manHourRate = 0;
-  startDate = '';
-  finishDate = '';
   ticketComment = '';
   selectedFile: File | null = null;
   readonly submitting = signal(false);
@@ -64,12 +60,11 @@ export class CrFormComponent implements OnInit {
     try {
       const created = await this.crs.create({
         name: this.title.trim(), priority: this.priority, scope: this.scope.trim(), description: this.description.trim(),
-        estimatedManHour: this.estimatedManHour, manHourRate: this.manHourRate,
-        startDate: this.startDate, finishDate: this.finishDate, projectID: this.projectId,
+        projectID: this.projectId,
       });
       let notice = this.crs.lastMessage() || 'Change request created successfully.';
       if (this.selectedFile) {
-        try { await this.details.create(created.id, this.selectedFile, this.ticketComment.trim()); }
+        try { await this.details.create(created.id, this.ticketComment.trim(), this.selectedFile); }
         catch (error) { notice += ` The attachment was not saved: ${apiErrorMessage(error, 'upload failed')}`; }
       }
       await this.router.navigate(['/change-requests', created.id], { state: { notice } });
@@ -92,8 +87,6 @@ export class CrFormComponent implements OnInit {
   }
 
   private valid(): boolean {
-    if (!this.title.trim() || !this.projectId || !this.description.trim() || !this.scope.trim() || !this.startDate || !this.finishDate) return false;
-    if (this.estimatedManHour < 0 || this.manHourRate < 0) return false;
-    return this.finishDate >= this.startDate;
+    return !!(this.title.trim() && this.projectId && this.description.trim() && this.scope.trim());
   }
 }

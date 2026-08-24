@@ -16,7 +16,9 @@ interface ValidationProblem {
 }
 
 export function apiErrorMessage(error: unknown, fallback: string): string {
-  if (!(error instanceof HttpErrorResponse)) return fallback;
+  if (!(error instanceof HttpErrorResponse)) {
+    return error instanceof Error && error.message.trim() ? error.message : fallback;
+  }
   if (error.status === 0 || [502, 503, 504].includes(error.status)) {
     return 'Cannot connect to the ChangeX API. Please try again when the service is available.';
   }

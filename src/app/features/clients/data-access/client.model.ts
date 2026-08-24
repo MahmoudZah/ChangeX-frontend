@@ -1,10 +1,3 @@
-export interface ClientContactDto {
-  name: string;
-  email: string;
-  phoneNumber: string;
-  systemRole: boolean;
-}
-
 export interface ClientResponseDto {
   id: string;
   name: string;
@@ -13,7 +6,7 @@ export interface ClientResponseDto {
   address: string | null;
   contactInfo: string;
   defaultContactID: string | null;
-  defaultContact: ClientContactDto | null;
+  defaultContactName: string | null;
 }
 
 export interface Client {
@@ -24,7 +17,7 @@ export interface Client {
   address: string;
   contactInfo: string;
   defaultContactId: string | null;
-  defaultContact: ClientContactDto | null;
+  defaultContactName: string | null;
 }
 
 export interface ClientDto {

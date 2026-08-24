@@ -19,14 +19,20 @@ export class ProjectsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly lastMessage = this._lastMessage.asReadonly();
+  readonly writesAvailable = true;
+  readonly unavailableMessage = '';
 
   async loadAll(clientId?: string): Promise<Project[]> {
     this._loading.set(true);
     this._error.set('');
     try {
+      const requestedClientId = clientId ?? (this.auth.isAdmin() ? undefined : this.auth.user()?.clientId);
+      const clientsRequest = this.clients.clients().length
+        ? Promise.resolve(this.clients.clients())
+        : this.clients.loadAll();
       const [response] = await Promise.all([
-        this.api.get<ProjectResponseDto[]>('/Project/GetAllProjects'),
-        this.clients.loadAll(),
+        this.api.get<ProjectResponseDto[]>('/Project/GetAllProjects', { ClientID: requestedClientId }),
+        clientsRequest,
       ]);
       const authenticatedClientId = this.auth.user()?.clientId;
       const projects = response
@@ -57,8 +63,10 @@ export class ProjectsService {
       this._projects.update((current) => [...current.filter((item) => item.id !== id), project]);
       return project;
     } catch (error) {
-      this._error.set(apiErrorMessage(error, 'The project could not be loaded from the API.'));
-      throw error;
+      if ((error as { status?: number }).status === 404) return null;
+      const message = apiErrorMessage(error, 'The project could not be loaded from the API.');
+      this._error.set(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -73,7 +81,7 @@ export class ProjectsService {
 
   async update(id: string, dto: ProjectDto): Promise<Project> {
     this._lastMessage.set('');
-    const response = await this.api.put<ApiEnvelope<ProjectResponseDto>>(`/Project/UpdateProject/${id}`, dto);
+    const response = await this.api.put<ApiEnvelope<ProjectResponseDto>>('/Project/UpdateProject', dto, { ID: id });
     const project = this.normalize(response.data);
     this._projects.update((current) => current.map((item) => item.id === id ? project : item));
     this._lastMessage.set(response.message);
@@ -82,7 +90,7 @@ export class ProjectsService {
 
   async delete(id: string): Promise<string> {
     this._lastMessage.set('');
-    const response = await this.api.delete<ApiMessage>(`/Project/DeleteProject/${id}`);
+    const response = await this.api.delete<ApiMessage>('/Project/DeleteProject', { ID: id });
     this._projects.update((current) => current.filter((project) => project.id !== id));
     this._lastMessage.set(response.message);
     return response.message;

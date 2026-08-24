@@ -8,12 +8,14 @@ import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.comp
 
 @Component({ selector: 'app-project-list', standalone: true, imports: [RouterLink, StatusBadgeComponent], templateUrl: './project-list.component.html' })
 export class ProjectListComponent implements OnInit {
-  private projectsService = inject(ProjectsService);
+  readonly projectsService = inject(ProjectsService);
   readonly auth = inject(AuthService);
   readonly clientsService = inject(ClientsService);
   readonly projects = this.projectsService.projects;
   readonly loading = this.projectsService.loading;
   readonly apiError = this.projectsService.error;
+  readonly writesAvailable = this.projectsService.writesAvailable;
+  readonly unavailableMessage = this.projectsService.unavailableMessage;
   readonly search = signal('');
   readonly clientFilter = signal('all');
   readonly stateFilter = signal('all');

@@ -7,7 +7,7 @@ import { ClientsService } from '@/features/clients/data-access/clients.service';
 @Component({ selector: 'app-client-form', standalone: true, imports: [FormsModule, RouterLink], templateUrl: './client-form.component.html' })
 export class ClientFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
-  private clients = inject(ClientsService);
+  readonly clients = inject(ClientsService);
   private router = inject(Router);
   clientId = '';
   name = '';
@@ -21,6 +21,8 @@ export class ClientFormComponent implements OnInit {
   readonly submitting = signal(false);
   readonly attempted = signal(false);
   readonly error = signal('');
+  readonly updatesAvailable = this.clients.updatesAvailable;
+  readonly updateUnavailableMessage = this.clients.updateUnavailableMessage;
 
   async ngOnInit(): Promise<void> {
     this.clientId = this.route.snapshot.paramMap.get('id') ?? '';
@@ -44,6 +46,10 @@ export class ClientFormComponent implements OnInit {
 
   async submit(): Promise<void> {
     if (this.submitting()) return;
+    if (this.clientId && !this.updatesAvailable) {
+      this.error.set(this.updateUnavailableMessage);
+      return;
+    }
     this.attempted.set(true);
     this.error.set('');
     if (!this.name.trim() || !this.email.trim() || !this.contactInfo.trim()) return;

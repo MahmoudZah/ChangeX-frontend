@@ -17,6 +17,8 @@ export class ClientsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly lastMessage = this._lastMessage.asReadonly();
+  readonly updatesAvailable = true;
+  readonly updateUnavailableMessage = '';
 
   async loadAll(): Promise<Client[]> {
     this._loading.set(true);
@@ -68,15 +70,7 @@ export class ClientsService {
 
   async create(dto: ClientDto): Promise<Client> {
     this._lastMessage.set('');
-    const form = new FormData();
-    form.append('Name', dto.name);
-    form.append('Email', dto.email);
-    form.append('ContactInfo', dto.contactInfo);
-    form.append('Description', dto.description ?? '');
-    form.append('Address', dto.address ?? '');
-    if (dto.defaultContactID) form.append('DefaultContactID', dto.defaultContactID);
-
-    const response = await this.api.post<ApiEnvelope<ClientResponseDto>>('/Client/AddClient', form);
+    const response = await this.api.post<ApiEnvelope<ClientResponseDto>>('/Client/AddClient', dto);
     const client = this.normalize(response.data);
     this._clients.update((current) => [...current, client]);
     this._lastMessage.set(response.message);
@@ -85,7 +79,7 @@ export class ClientsService {
 
   async update(id: string, dto: ClientDto): Promise<Client> {
     this._lastMessage.set('');
-    const response = await this.api.put<ApiEnvelope<ClientResponseDto>>(`/Client/UpdateClient/${id}`, dto);
+    const response = await this.api.put<ApiEnvelope<ClientResponseDto>>('/Client/UpdateClient', dto, { ID: id });
     const client = this.normalize(response.data);
     this._clients.update((current) => current.map((item) => item.id === id ? client : item));
     this._lastMessage.set(response.message);
@@ -94,7 +88,7 @@ export class ClientsService {
 
   async delete(id: string): Promise<string> {
     this._lastMessage.set('');
-    const response = await this.api.delete<ApiMessage>(`/Client/DeleteClient/${id}`);
+    const response = await this.api.delete<ApiMessage>('/Client/DeleteClient', { ID: id });
     this._clients.update((current) => current.filter((client) => client.id !== id));
     this._lastMessage.set(response.message);
     return response.message;
@@ -109,7 +103,7 @@ export class ClientsService {
       address: raw.address ?? '',
       contactInfo: raw.contactInfo,
       defaultContactId: raw.defaultContactID,
-      defaultContact: raw.defaultContact,
+      defaultContactName: raw.defaultContactName,
     };
   }
 }

@@ -22,9 +22,15 @@ export class ProjectFormComponent implements OnInit {
   readonly attempted = signal(false);
   readonly submitting = signal(false);
   readonly error = signal('');
+  readonly writesAvailable = this.projects.writesAvailable;
+  readonly unavailableMessage = this.projects.unavailableMessage;
 
   async ngOnInit(): Promise<void> {
     this.projectId = this.route.snapshot.paramMap.get('id') ?? '';
+    if (!this.writesAvailable) {
+      this.loading.set(false);
+      return;
+    }
     await this.clients.loadAll();
     this.clientId = this.route.snapshot.queryParamMap.get('clientId') ?? this.clients.clients()[0]?.id ?? '';
     if (this.projectId) {

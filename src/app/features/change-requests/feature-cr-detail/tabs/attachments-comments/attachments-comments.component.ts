@@ -41,18 +41,19 @@ export class CrAttachmentsCommentsTabComponent implements OnInit {
 
   async save(): Promise<void> {
     if (this.busy()) return;
-    if (!this.editingId() && !this.selectedFile) { this.error.set('An attachment is required when creating a detail record.'); return; }
+    if (!this.editingId() && !this.selectedFile) { this.error.set('Choose an attachment. The API requires a file for every new message.'); return; }
+    if (!this.comment.trim() && !this.selectedFile) { this.error.set('Enter a message or choose a replacement attachment.'); return; }
     this.busy.set(true); this.error.set(''); this.notice.set('');
     try {
       if (this.editingId()) await this.service.update(this.editingId(), this.crId, this.comment.trim(), this.selectedFile ?? undefined);
-      else await this.service.create(this.crId, this.selectedFile!, this.comment.trim());
+      else await this.service.create(this.crId, this.comment.trim(), this.selectedFile!);
       this.notice.set(this.service.lastMessage()); this.cancelEdit();
     } catch (error) { this.error.set(apiErrorMessage(error, 'The comment and attachment could not be saved.')); }
     finally { this.busy.set(false); }
   }
 
   async deleteRecord(record: CrDetail): Promise<void> {
-    if (this.busy() || !window.confirm(`Delete ${record.fileName} and its comment?`)) return;
+    if (this.busy() || !window.confirm(`Delete this ${record.fileName ? 'attachment and message' : 'message'}?`)) return;
     this.busy.set(true); this.error.set('');
     try { this.notice.set(await this.service.delete(record.id)); }
     catch (error) { this.error.set(apiErrorMessage(error, 'The detail record could not be deleted.')); }

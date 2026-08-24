@@ -9,6 +9,11 @@ export interface CRStatus extends CRStatusDto {
   availableStatusIDs: string | null;
 }
 
+export interface AvailableStatusDto {
+  id: string;
+  currentStatus: string;
+}
+
 export interface StatusTransition {
   id: string;
   label: string;

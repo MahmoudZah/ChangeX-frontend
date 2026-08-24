@@ -11,8 +11,8 @@ import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.comp
 export class ClientDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private clientsService = inject(ClientsService);
-  private projectsService = inject(ProjectsService);
+  readonly clientsService = inject(ClientsService);
+  readonly projectsService = inject(ProjectsService);
   private usersService = inject(UsersService);
   readonly client = signal<Client | null>(null);
   readonly loading = signal(true);
@@ -20,6 +20,9 @@ export class ClientDetailComponent implements OnInit {
   readonly deleting = signal(false);
   readonly projects = computed(() => this.projectsService.projects().filter((project) => project.clientId === this.client()?.id));
   readonly users = computed(() => this.usersService.usersForClient(this.client()?.id ?? ''));
+  readonly projectsError = this.projectsService.error;
+  readonly updatesAvailable = this.clientsService.updatesAvailable;
+  readonly projectWritesAvailable = this.projectsService.writesAvailable;
 
   async ngOnInit(): Promise<void> { await this.load(); }
 

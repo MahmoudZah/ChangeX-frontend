@@ -53,10 +53,6 @@ export interface CreateCRDto {
   priority: string;
   scope: string;
   description: string;
-  estimatedManHour: number;
-  manHourRate: number;
-  startDate: string;
-  finishDate: string;
   projectID: string;
 }
 

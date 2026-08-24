@@ -26,6 +26,7 @@ export class DashboardComponent implements OnInit {
   readonly formatCurrency = formatCurrency;
   readonly formatDate = formatDate;
   readonly crError = this.crs.error;
+  readonly projectError = this.projects.error;
 
   adminTab = signal<'all' | 'estimating' | 'signoff' | 'delayed'>('estimating');
   adminSearch = signal('');
@@ -74,10 +75,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void {
-    void this.crs.loadAll();
-    void this.invoices.loadAll();
-    void this.projects.loadAll();
-    if (this.auth.isAdmin()) void this.clients.loadAll();
+  async ngOnInit(): Promise<void> {
+    await Promise.all([this.crs.loadAll(), this.invoices.loadAll(), this.clients.loadAll()]);
+    await this.projects.loadAll();
   }
 }

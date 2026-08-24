@@ -16,6 +16,8 @@ export class ClientListComponent implements OnInit {
   readonly clients = this.clientsService.clients;
   readonly loading = this.clientsService.loading;
   readonly apiError = this.clientsService.error;
+  readonly projectError = this.projectsService.error;
+  readonly updatesAvailable = this.clientsService.updatesAvailable;
   readonly search = signal('');
   readonly deletingId = signal('');
   readonly actionError = signal('');
@@ -29,10 +31,12 @@ export class ClientListComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.clientsService.loadAll(), this.projectsService.loadAll()]);
+    await this.clientsService.loadAll();
+    await this.projectsService.loadAll();
   }
 
-  projectCount(clientId: string): number {
+  projectCount(clientId: string): number | null {
+    if (this.projectError()) return null;
     return this.projectsService.projects().filter((project) => project.clientId === clientId).length;
   }
 
@@ -41,7 +45,8 @@ export class ClientListComponent implements OnInit {
   }
 
   async retry(): Promise<void> {
-    await Promise.all([this.clientsService.loadAll(), this.projectsService.loadAll()]);
+    await this.clientsService.loadAll();
+    await this.projectsService.loadAll();
   }
 
   async deleteClient(id: string, name: string): Promise<void> {

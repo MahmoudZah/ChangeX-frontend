@@ -2,6 +2,7 @@
 @if (loading()) { <div class="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">Loading client…</div> }
 @else if (notFound()) { <div class="rounded-xl border border-border bg-card p-12 text-center"><h2 class="font-bold">Client not found</h2><a routerLink="/clients" class="mt-3 inline-block text-sm font-semibold text-primary">Return to clients</a></div> }
 @else {
+@if (clientId && !updatesAvailable) { <p class="mb-5 rounded-lg border border-[#f5a623]/30 bg-[#fff9ed] px-4 py-3 text-sm text-muted-foreground">{{ updateUnavailableMessage }}</p> }
 <form class="rounded-xl border border-border bg-card p-6 md:p-8" (ngSubmit)="submit()" novalidate>
   <div class="grid gap-6 lg:grid-cols-2">
     <label><span class="mb-2 block text-sm font-semibold">Organization Name *</span><input [(ngModel)]="name" name="name" required class="h-11 w-full rounded-lg border border-border bg-card px-3 outline-none ring-primary focus:ring-2" />@if (attempted() && !name.trim()) { <span class="mt-1 block text-xs text-destructive">Organization name is required.</span> }</label>
@@ -11,6 +12,6 @@
     <label class="lg:col-span-2"><span class="mb-2 block text-sm font-semibold">Description</span><textarea [(ngModel)]="description" name="description" rows="5" class="w-full rounded-lg border border-border bg-card p-3 outline-none ring-primary focus:ring-2"></textarea></label>
   </div>
   @if (error()) { <p class="mt-5 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">{{ error() }}</p> }
-  <div class="mt-8 flex justify-end gap-3"><a routerLink="/clients" class="inline-flex h-11 items-center rounded-lg border border-border px-6 text-sm font-semibold">Cancel</a><button type="submit" [disabled]="submitting()" class="h-11 rounded-lg bg-primary px-7 text-sm font-semibold text-white disabled:opacity-60">{{ submitting() ? 'Saving…' : 'Save Client' }}</button></div>
+  <div class="mt-8 flex justify-end gap-3"><a routerLink="/clients" class="inline-flex h-11 items-center rounded-lg border border-border px-6 text-sm font-semibold">Cancel</a><button type="submit" [disabled]="submitting() || (!!clientId && !updatesAvailable)" class="h-11 rounded-lg bg-primary px-7 text-sm font-semibold text-white disabled:opacity-60">{{ submitting() ? 'Saving…' : 'Save Client' }}</button></div>
 </form>
 }

@@ -2,25 +2,12 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ApiEnvelope, apiErrorMessage } from '@/core/http/api-contract';
 import { ApiService } from '@/core/http/api.service';
 import { Role } from '@/shared/util/constants';
-import { CRStatus, CRStatusDto, StatusTransition } from '@/features/change-requests/data-access/status.model';
-
-const WORKFLOW_TARGET_LABELS: Record<string, string[]> = {
-  'pending vendor feedback': ['Accepted (CR)', 'Rejected', 'Pending Client Clarification'],
-  'pending client clarification': ['Pending Vendor FeedBack'],
-  'accepted (cr)': ['Estimation Created'],
-  'estimation created': ['Pending Vendor FeedBack'],
-  'pending client approval': ['Accepted (Estimation)', 'Rejected'],
-  'accepted (estimation)': ['Analysis'],
-  analysis: ['Design', 'Pending Client Approval'],
-  design: ['Development'],
-  development: ['Testing'],
-  testing: ['Pending Customer Approval'],
-  'pending customer approval': ['Accepted (Test)', 'Rejected', 'Rework Required'],
-  'rework required': ['Analysis'],
-  'accepted (test)': ['Deployed'],
-  deployed: ['Delivered'],
-  delivered: ['Completed'],
-};
+import {
+  AvailableStatusDto,
+  CRStatus,
+  CRStatusDto,
+  StatusTransition,
+} from '@/features/change-requests/data-access/status.model';
 
 @Injectable({ providedIn: 'root' })
 export class StatusesService {
@@ -33,19 +20,49 @@ export class StatusesService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
-  async loadForCr(crId: string): Promise<StatusTransition[]> {
+  async loadCurrentForCrs(crIds: string[]): Promise<void> {
+    const ids = [...new Set(crIds.filter(Boolean))];
+    if (!ids.length) return;
+
     this._loading.set(true);
     this._error.set('');
     try {
+      const results = await Promise.allSettled(
+        ids.map((id) => this.api.get<ApiEnvelope<CRStatusDto>>(`/Status/CR/${id}`)),
+      );
+      const currentByCr: Record<string, CRStatus> = {};
+      let firstError: unknown;
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') currentByCr[ids[index]] = result.value.data;
+        else firstError ??= result.reason;
+      });
+      this._currentByCr.update((current) => ({ ...current, ...currentByCr }));
+      if (firstError) {
+        this._error.set(apiErrorMessage(firstError, 'Some change-request statuses could not be loaded.'));
+      }
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  async loadForCr(crId: string, refreshCurrent = false): Promise<StatusTransition[]> {
+    this._loading.set(true);
+    this._error.set('');
+    try {
+      const cachedCurrent = refreshCurrent ? undefined : this.getCurrentForCr(crId);
       const [currentResponse, availableResponse] = await Promise.all([
-        this.api.get<ApiEnvelope<CRStatusDto>>(`/Status/CR/${crId}`),
-        this.api.get<ApiEnvelope<string[]>>(`/Status/cr/${crId}/available`),
+        cachedCurrent
+          ? Promise.resolve({ message: '', data: cachedCurrent })
+          : this.api.get<ApiEnvelope<CRStatusDto>>(`/Status/CR/${crId}`),
+        this.api.get<ApiEnvelope<unknown[]>>(`/Status/AvailableCRStatus/${crId}`),
       ]);
       const current = currentResponse.data;
-      const labels = WORKFLOW_TARGET_LABELS[current.currentStatus.trim().toLowerCase()] ?? [];
-      const transitions = availableResponse.data.map((id, index) => ({
-        id,
-        label: labels[index] ?? `Status ${id.slice(0, 8)}`,
+      if (!availableResponse.data.every((status) => this.isAvailableStatusDto(status))) {
+        throw new Error('The API returned an invalid available-status response.');
+      }
+      const transitions = availableResponse.data.map((status) => ({
+        id: status.id,
+        label: status.currentStatus,
       }));
       this._currentByCr.update((map) => ({ ...map, [crId]: current }));
       this._availableByCr.update((map) => ({ ...map, [crId]: transitions }));
@@ -70,5 +87,12 @@ export class StatusesService {
   canAct(crId: string, role: Role | undefined): boolean {
     const accessedBy = this.getCurrentForCr(crId)?.accessedBy.toLowerCase();
     return accessedBy === 'admin' ? role === 'Admin' : accessedBy === 'client' && role !== 'Admin';
+  }
+
+  private isAvailableStatusDto(value: unknown): value is AvailableStatusDto {
+    if (typeof value !== 'object' || value === null) return false;
+    const status = value as Partial<AvailableStatusDto>;
+    return typeof status.id === 'string' && !!status.id &&
+      typeof status.currentStatus === 'string' && !!status.currentStatus.trim();
   }
 }

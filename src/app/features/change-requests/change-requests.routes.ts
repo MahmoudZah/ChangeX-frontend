@@ -1,4 +1,5 @@
 ﻿import { Routes } from '@angular/router';
+import { roleGuard } from '@/core/auth/role.guard';
 
 export const CR_ROUTES: Routes = [
   {
@@ -8,6 +9,7 @@ export const CR_ROUTES: Routes = [
   },
   {
     path: 'new',
+    canActivate: [roleGuard(['UserAdmin', 'User'])],
     loadComponent: () =>
       import('@/features/change-requests/feature-cr-form/cr-form.component').then((m) => m.CrFormComponent),
   },

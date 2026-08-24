@@ -28,7 +28,7 @@ export class ApprovalsListComponent implements OnInit {
   async change(id: string, targetId: string): Promise<void> {
     if (this.busyId()) return;
     this.busyId.set(id); this.error.set(''); this.notice.set('');
-    try { await this.crs.changeStatus(id, targetId); await this.statuses.loadForCr(id); this.notice.set(this.crs.lastMessage()); }
+    try { await this.crs.changeStatus(id, targetId); this.notice.set(this.crs.lastMessage()); }
     catch (error) { this.error.set(apiErrorMessage(error, 'The status could not be updated.')); }
     finally { this.busyId.set(''); }
   }

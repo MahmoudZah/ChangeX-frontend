@@ -10,13 +10,14 @@ import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.comp
 export class ProjectDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private projectsService = inject(ProjectsService);
+  readonly projectsService = inject(ProjectsService);
   readonly auth = inject(AuthService);
   readonly project = signal<Project | null>(null);
   readonly loading = signal(true);
   readonly forbidden = signal(false);
   readonly deleting = signal(false);
   readonly error = signal('');
+  readonly writesAvailable = this.projectsService.writesAvailable;
 
   async ngOnInit(): Promise<void> { await this.load(); }
   async load(): Promise<void> {

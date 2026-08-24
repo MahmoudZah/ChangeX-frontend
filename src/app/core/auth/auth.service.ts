@@ -37,7 +37,7 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._token() && !!this._user());
   readonly isAdmin = computed(() => this._user()?.role === 'Admin');
   readonly isClientUser = computed(() => ['UserAdmin', 'User'].includes(this._user()?.role ?? ''));
-  readonly canManageProjects = computed(() => ['Admin', 'UserAdmin'].includes(this._user()?.role ?? ''));
+  readonly canManageProjects = computed(() => this._user()?.role === 'Admin');
   readonly loginError = this._loginError.asReadonly();
 
   constructor() {
@@ -156,7 +156,8 @@ export class AuthService {
       const payload = token.split('.')[1] ?? '';
       const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
       const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-      const decoded: unknown = JSON.parse(atob(padded));
+      const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+      const decoded: unknown = JSON.parse(new TextDecoder().decode(bytes));
       return this.isRecord(decoded) ? decoded : {};
     } catch {
       return {};

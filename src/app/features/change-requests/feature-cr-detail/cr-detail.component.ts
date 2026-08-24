@@ -36,6 +36,13 @@ export class CrDetailComponent implements OnInit {
   readonly notice = signal((window.history.state as { notice?: string }).notice ?? '');
   readonly transitions = computed(() => this.statuses.getAvailableForCr(this.cr()?.id ?? ''));
   readonly canAct = computed(() => this.statuses.canAct(this.cr()?.id ?? '', this.auth.user()?.role));
+  readonly canEditEstimate = computed(() => {
+    const item = this.cr();
+    const currentStatus = this.statuses.getCurrentForCr(item?.id ?? '')?.currentStatus.toLowerCase() ?? '';
+    return this.isAdmin() && this.canAct() && !!item &&
+      !item.estimatedHours && !item.hourlyRate &&
+      currentStatus.includes('accepted') && currentStatus.includes('cr');
+  });
   readonly attachmentCount = computed(() => this.details.detailsFor(this.cr()?.id ?? '').length);
 
   async ngOnInit(): Promise<void> { await this.load(); }
@@ -46,7 +53,12 @@ export class CrDetailComponent implements OnInit {
       const item = await this.crs.getById(id);
       if (item && !this.auth.isAdmin() && item.clientId !== this.auth.user()?.clientId) this.forbidden.set(true);
       else this.cr.set(item);
-      if (item && !this.forbidden()) await this.details.loadFor(id);
+      if (item && !this.forbidden()) {
+        await this.details.loadFor(id);
+        if (this.statuses.getCurrentForCr(id)?.currentStatus.toLowerCase().includes('clarification')) {
+          this.tab.set('comments');
+        }
+      }
     } catch (error) { this.error.set(apiErrorMessage(error, 'The change request could not be loaded.')); }
     finally { this.loading.set(false); }
   }
@@ -56,11 +68,33 @@ export class CrDetailComponent implements OnInit {
     if (!item || this.busy() || !this.canAct()) return;
     this.busy.set(true); this.error.set(''); this.notice.set('');
     try {
-      this.cr.set(await this.crs.changeStatus(item.id, target.id));
-      await this.statuses.loadForCr(item.id);
+      const updated = await this.crs.changeStatus(item.id, target.id);
+      this.cr.set(updated);
       this.notice.set(this.crs.lastMessage() || `Status changed to ${target.label}.`);
+      if (target.label.toLowerCase().includes('clarification')) {
+        this.tab.set('comments');
+        this.notice.set('Clarification requested. Add the message and required attachment below for the client.');
+      } else {
+        const currentStatus = this.statuses.getCurrentForCr(item.id);
+        const statusName = currentStatus?.currentStatus.toLowerCase() ?? '';
+        if (currentStatus?.accessedBy.toLowerCase() !== 'admin' ||
+            updated.estimatedHours || updated.hourlyRate ||
+            !statusName.includes('accepted') || !statusName.includes('cr')) return;
+        this.tab.set('estimate');
+        this.notice.set(`Status changed to ${target.label}. Complete the estimate below.`);
+      }
     } catch (error) { this.error.set(apiErrorMessage(error, 'The status could not be updated.')); }
     finally { this.busy.set(false); }
+  }
+
+  async estimateSaved(updated: ChangeRequest): Promise<void> {
+    this.cr.set(updated);
+    const nextTransitions = this.transitions();
+    if (nextTransitions.length === 1) {
+      await this.changeTo(nextTransitions[0]);
+      return;
+    }
+    this.notice.set(this.crs.lastMessage() || 'Estimate saved.');
   }
 
   async deleteCr(item: ChangeRequest): Promise<void> {

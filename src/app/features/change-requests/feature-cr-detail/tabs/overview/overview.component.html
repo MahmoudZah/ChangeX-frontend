@@ -21,11 +21,15 @@
   <div class="space-y-6">
     <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
       <h2 class="mb-4 text-lg font-semibold">Estimate Cost Breakdown</h2>
-      <dl class="space-y-3 text-sm">
-        <div class="flex justify-between"><dt class="text-muted-foreground">Engineering Hours</dt><dd class="font-medium">{{ cr.estimatedHours }} Hours</dd></div>
-        <div class="flex justify-between"><dt class="text-muted-foreground">Hourly Rate</dt><dd class="font-medium">{{ formatCurrency(cr.hourlyRate) }}/hr</dd></div>
-        <div class="flex justify-between border-t border-border pt-3 text-base"><dt class="font-semibold">Total Estimated Cost</dt><dd class="font-bold">{{ formatCurrency(cr.estimatedCost) }}</dd></div>
-      </dl>
+      @if (cr.estimatedHours && cr.hourlyRate) {
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between"><dt class="text-muted-foreground">Engineering Hours</dt><dd class="font-medium">{{ cr.estimatedHours }} Hours</dd></div>
+          <div class="flex justify-between"><dt class="text-muted-foreground">Hourly Rate</dt><dd class="font-medium">{{ formatCurrency(cr.hourlyRate) }}/hr</dd></div>
+          <div class="flex justify-between border-t border-border pt-3 text-base"><dt class="font-semibold">Total Estimated Cost</dt><dd class="font-bold">{{ formatCurrency(cr.estimatedCost) }}</dd></div>
+        </dl>
+      } @else {
+        <p class="text-sm text-muted-foreground">The delivery admin has not prepared the estimate yet.</p>
+      }
     </section>
 
     @if (cr.expectedStart && cr.expectedDelivery) {
