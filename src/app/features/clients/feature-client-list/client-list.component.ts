@@ -1,18 +1,63 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { apiErrorMessage } from '@/core/http/api-contract';
 import { ClientsService } from '@/features/clients/data-access/clients.service';
-import { DataTableComponent } from '@/shared/ui/data-table/data-table.component';
+import { ProjectsService } from '@/features/projects/data-access/projects.service';
 
 @Component({
   selector: 'app-client-list',
   standalone: true,
-  imports: [DataTableComponent],
+  imports: [RouterLink],
   templateUrl: './client-list.component.html',
 })
 export class ClientListComponent implements OnInit {
   private clientsService = inject(ClientsService);
+  private projectsService = inject(ProjectsService);
   readonly clients = this.clientsService.clients;
+  readonly loading = this.clientsService.loading;
+  readonly apiError = this.clientsService.error;
+  readonly search = signal('');
+  readonly deletingId = signal('');
+  readonly actionError = signal('');
+  readonly notice = signal(this.navigationNotice());
 
-  ngOnInit(): void {
-    void this.clientsService.loadAll();
+  readonly filtered = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    return this.clients().filter((client) =>
+      !query || `${client.name} ${client.email} ${client.contactInfo} ${client.address}`.toLowerCase().includes(query),
+    );
+  });
+
+  async ngOnInit(): Promise<void> {
+    await Promise.all([this.clientsService.loadAll(), this.projectsService.loadAll()]);
+  }
+
+  projectCount(clientId: string): number {
+    return this.projectsService.projects().filter((project) => project.clientId === clientId).length;
+  }
+
+  updateSearch(event: Event): void {
+    this.search.set((event.target as HTMLInputElement).value);
+  }
+
+  async retry(): Promise<void> {
+    await Promise.all([this.clientsService.loadAll(), this.projectsService.loadAll()]);
+  }
+
+  async deleteClient(id: string, name: string): Promise<void> {
+    if (this.deletingId() || !window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    this.deletingId.set(id);
+    this.actionError.set('');
+    try {
+      this.notice.set(await this.clientsService.delete(id));
+    } catch (error) {
+      this.actionError.set(apiErrorMessage(error, 'The client could not be deleted. It may still have related records.'));
+    } finally {
+      this.deletingId.set('');
+    }
+  }
+
+  private navigationNotice(): string {
+    return (window.history.state as { notice?: string }).notice ?? '';
   }
 }

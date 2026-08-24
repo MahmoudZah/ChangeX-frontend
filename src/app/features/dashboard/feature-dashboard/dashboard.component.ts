@@ -8,7 +8,7 @@ import { ProjectsService } from '@/features/projects/data-access/projects.servic
 import { DataTableComponent } from '@/shared/ui/data-table/data-table.component';
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
-import { formatCurrency, formatRelative } from '@/shared/util/formatters';
+import { formatCurrency, formatDate } from '@/shared/util/formatters';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,33 +24,60 @@ export class DashboardComponent implements OnInit {
   readonly clients = inject(ClientsService);
 
   readonly formatCurrency = formatCurrency;
-  readonly formatRelative = formatRelative;
+  readonly formatDate = formatDate;
+  readonly crError = this.crs.error;
 
   adminTab = signal<'all' | 'estimating' | 'signoff' | 'delayed'>('estimating');
+  adminSearch = signal('');
 
   readonly recentCrs = computed(() => [...this.crs.crs()].slice(0, 5));
+  readonly activeCrs = computed(
+    () =>
+      this.crs
+        .crs()
+        .filter((cr) => !['rejected', 'completed', 'implemented'].some((state) => cr.status.toLowerCase().includes(state))),
+  );
 
   readonly userFirstName = computed(() => {
     return this.auth.user()?.name.split(' ')[0] ?? '';
   });
 
   readonly activeProjectCount = computed(
-    () => this.projects.projects().filter((p) => p.state === 'Active').length,
+    () => this.projects.projects().filter((project) =>
+      project.state === 'Active' && (this.auth.isAdmin() || project.clientId === this.auth.user()?.clientId),
+    ).length,
   );
 
   readonly adminFiltered = computed(() => {
     const tab = this.adminTab();
-    const list = this.crs.crs();
-    if (tab === 'estimating') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('estimat'));
-    if (tab === 'signoff') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('signoff'));
-    if (tab === 'delayed') return list.filter((cr) => (cr.status ?? '').toLowerCase().includes('delayed'));
+    const search = this.adminSearch().trim().toLowerCase();
+    const list = this.crs
+      .crs()
+      .filter((cr) => !search || `${cr.code} ${cr.title} ${cr.clientName} ${cr.projectName}`.toLowerCase().includes(search));
+    if (tab === 'estimating') {
+      return list.filter((cr) => cr.stage.toLowerCase().includes('estimat') || cr.status.toLowerCase().includes('review'));
+    }
+    if (tab === 'signoff') {
+      return list.filter((cr) => cr.status.toLowerCase().includes('approval') || cr.status.toLowerCase().includes('test'));
+    }
+    if (tab === 'delayed') return list.filter((cr) => cr.status.toLowerCase().includes('delayed') || cr.daysOpen > 14);
     return list;
   });
 
+  updateAdminSearch(event: Event): void {
+    this.adminSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  setAdminTab(tab: string): void {
+    if (tab === 'all' || tab === 'estimating' || tab === 'signoff' || tab === 'delayed') {
+      this.adminTab.set(tab);
+    }
+  }
+
   ngOnInit(): void {
     void this.crs.loadAll();
-    void this.invoices;
+    void this.invoices.loadAll();
     void this.projects.loadAll();
-    void this.clients.loadAll();
+    if (this.auth.isAdmin()) void this.clients.loadAll();
   }
 }

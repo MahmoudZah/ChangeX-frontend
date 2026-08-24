@@ -1,8 +1,1 @@
-<section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
-  <h2 class="mb-6 text-lg font-semibold">Status History</h2>
-  @if (steps.length) {
-    <app-stepper [steps]="steps" />
-  } @else {
-    <p class="text-sm text-muted-foreground">No timeline entries yet.</p>
-  }
-</section>
+<section class="rounded-2xl border border-border bg-card p-6 shadow-sm"><h2 class="text-lg font-semibold">Current Workflow Stage</h2><div class="mt-5 flex items-center gap-4"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">1</span><div><p class="font-bold">{{ status }}</p><p class="mt-1 text-xs text-muted-foreground">Action owner: {{ accessedBy || 'Not exposed' }}</p></div></div><p class="mt-6 rounded-lg bg-muted/40 px-4 py-3 text-sm text-muted-foreground">The backend exposes the current state and available transitions, but it does not expose status history timestamps or actors. No synthetic timeline entries are shown.</p></section>

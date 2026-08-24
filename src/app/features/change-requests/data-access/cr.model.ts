@@ -1,12 +1,29 @@
 import { Priority } from '@/shared/util/constants';
 
+export interface CRResponseDto {
+  id: string;
+  name: string;
+  priority: string;
+  scope: string;
+  description: string;
+  estimatedManHour: number;
+  manHourRate: number;
+  startDate: string;
+  finishDate: string;
+  currentStatusID: string;
+  currentStatusName: string;
+  projectID: string;
+  projectName: string;
+  currentStatus?: { currentStatus: string };
+  project?: { name: string };
+}
+
 export interface ChangeRequest {
   id: string;
   name: string;
   title: string;
   code: string;
   priority: Priority | string;
-  /** scope as an array of bullet-point strings (split from backend string) */
   scope: string[];
   description: string;
   estimatedManHour: number;
@@ -29,10 +46,9 @@ export interface ChangeRequest {
   clientId: string;
   clientName: string;
   daysOpen: number;
-  lastUpdated: string;
 }
 
-export interface CRDto {
+export interface CreateCRDto {
   name: string;
   priority: string;
   scope: string;
@@ -41,6 +57,12 @@ export interface CRDto {
   manHourRate: number;
   startDate: string;
   finishDate: string;
-  currentStatusID: string;
   projectID: string;
+}
+
+export interface EstimateCRDto {
+  estimatedManHour: number;
+  manHourRate: number;
+  startDate: string;
+  finishDate: string;
 }

@@ -15,23 +15,30 @@ export class SidebarComponent {
   readonly theme = inject(ThemeService);
 
   readonly clientLinks = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'grid' },
-    { path: '/projects', label: 'Projects', icon: 'folder' },
-    { path: '/change-requests', label: 'Change Requests', icon: 'file' },
-    { path: '/approvals', label: 'Approvals', icon: 'check' },
-    { path: '/invoices', label: 'Invoices', icon: 'card' },
-    { path: '/account', label: 'Account/Profile', icon: 'user' },
+    { path: '/dashboard', label: 'Dashboard', icon: 'layout-dashboard.svg' },
+    { path: '/projects', label: 'Projects', icon: 'briefcase.svg' },
+    { path: '/change-requests', label: 'Change Requests', icon: 'refresh-cw.svg' },
+    { path: '/approvals', label: 'Approvals', icon: 'check-circle.svg' },
+    { path: '/account', label: 'Account/Profile', icon: 'user.svg' },
   ];
 
   readonly adminLinks = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'grid' },
-    { path: '/clients', label: 'Clients', icon: 'users' },
-    { path: '/projects', label: 'Projects', icon: 'folder' },
-    { path: '/change-requests', label: 'Change Requests', icon: 'file' },
-    { path: '/users', label: 'Users', icon: 'user' },
-    { path: '/invoices', label: 'Invoices', icon: 'card' },
-    { path: '/account', label: 'Account/Profile', icon: 'user' },
+    { path: '/dashboard', label: 'Dashboard', icon: 'layout-dashboard.svg' },
+    { path: '/clients', label: 'Clients', icon: 'users-2.svg' },
+    { path: '/projects', label: 'Projects', icon: 'briefcase.svg' },
+    { path: '/change-requests', label: 'Change Requests', icon: 'refresh-cw.svg' },
+    { path: '/estimates', label: 'Estimates', icon: 'calculator.svg' },
+    { path: '/users', label: 'Users/Team', icon: 'users.svg' },
+    { path: '/account', label: 'Settings', icon: 'settings.svg' },
   ];
+
+  iconPath(icon: string): string {
+    return `/assets/icons/${icon}`;
+  }
+
+  avatarPath(): string {
+    return this.auth.isAdmin() ? '/assets/icons/avatar-admin.png' : '/assets/icons/avatar-client.png';
+  }
 
   links() {
     return this.auth.isAdmin() ? this.adminLinks : this.clientLinks;

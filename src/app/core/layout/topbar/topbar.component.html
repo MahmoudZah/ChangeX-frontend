@@ -1,1 +1,12 @@
-﻿<!-- Page titles live in each feature header to match Figma -->
+<header class="sticky top-0 z-40 border-b border-white/10 bg-sidebar px-5 text-white lg:hidden">
+  <div class="flex h-16 items-center justify-between">
+    <a routerLink="/dashboard" class="flex items-center gap-2" (click)="close()"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-primary">CX</span><span class="font-bold">ChangeX</span></a>
+    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 text-xl" (click)="toggle()" [attr.aria-expanded]="open()" aria-label="Open navigation">{{ open() ? '×' : '☰' }}</button>
+  </div>
+  @if (open()) {
+    <nav class="grid gap-1 border-t border-white/10 py-3">
+      @for (link of links(); track link.path) { <a [routerLink]="link.path" routerLinkActive="bg-sidebar-active" [routerLinkActiveOptions]="{ exact: link.path === '/dashboard' }" class="rounded-lg px-4 py-2.5 text-sm font-semibold" (click)="close()">{{ link.label }}</a> }
+      <button type="button" class="mt-2 rounded-lg border border-white/15 px-4 py-2.5 text-left text-sm font-semibold" (click)="logout()">Sign out</button>
+    </nav>
+  }
+</header>

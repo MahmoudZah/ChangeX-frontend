@@ -1,20 +1,32 @@
-<div class="mb-8">
-  <h1 class="text-3xl font-bold tracking-tight">Account / Profile</h1>
-  <p class="mt-1 text-muted-foreground">Your workspace identity and organization details</p>
-</div>
+<header class="mb-8"><h1 class="text-[28px] font-bold">{{ auth.isAdmin() ? 'Settings' : 'Account / Profile' }}</h1><p class="mt-1 text-sm text-muted-foreground">Manage your workspace identity and appearance preferences</p></header>
 
-<section class="max-w-xl rounded-2xl border border-border bg-card p-8 shadow-sm">
-  <div class="mb-6 flex items-center gap-4">
-    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
-      {{ auth.user()?.name?.charAt(0) }}
+<div class="grid max-w-5xl gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+  <section class="rounded-[10px] border border-border bg-card p-6 md:p-8">
+    <h2 class="mb-6 text-lg font-bold">Profile Information</h2>
+    @if (loading()) { <p class="mb-5 text-sm text-muted-foreground">Refreshing profile details…</p> }
+    @if (error()) { <div class="mb-5 flex items-center justify-between gap-3 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"><span>{{ error() }}</span><button type="button" class="font-semibold underline" (click)="loadProfile()">Retry</button></div> }
+    @if (usesTokenProfile()) { <p class="mb-5 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">Profile details are shown from your authenticated token because the current API cannot resolve the client scope for UserAdmin tokens.</p> }
+    <div class="mb-7 flex items-center gap-4">
+      <img [src]="auth.isAdmin() ? '/assets/icons/avatar-admin.png' : '/assets/icons/avatar-client.png'" alt="" class="h-16 w-16 rounded-full object-cover" />
+      <div><h3 class="text-xl font-bold">{{ displayName() }}</h3><p class="mt-0.5 text-sm text-muted-foreground">{{ displayCompany() }}</p></div>
     </div>
-    <div>
-      <h2 class="text-xl font-bold">{{ auth.user()?.name }}</h2>
-      <p class="text-sm text-muted-foreground">{{ auth.user()?.company }}</p>
-    </div>
+    <dl class="grid gap-5 border-t border-border pt-6 sm:grid-cols-2">
+      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email Address</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayEmail() }}</dd></div>
+      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workspace Role</dt><dd class="mt-1.5 text-sm font-semibold">{{ auth.user()?.role === 'Admin' ? 'Vendor Administrator' : auth.user()?.role === 'UserAdmin' ? 'Client Administrator' : 'Client User' }}</dd></div>
+      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Organization</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayCompany() }}</dd></div>
+      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone Number</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayPhone() }}</dd></div>
+      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account ID</dt><dd class="mt-1.5 truncate text-sm font-semibold">{{ auth.user()?.id || '—' }}</dd></div>
+    </dl>
+  </section>
+
+  <div class="space-y-6">
+    <section class="rounded-[10px] border border-border bg-card p-6">
+      <h2 class="text-lg font-bold">Appearance</h2><p class="mt-1 text-sm text-muted-foreground">Choose how ChangeX looks on this device.</p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <button type="button" (click)="theme.toggle('light')" class="rounded-lg border p-4 text-left" [class.border-primary]="theme.mode() === 'light'" [class.bg-status-accepted]="theme.mode() === 'light'" [class.border-border]="theme.mode() !== 'light'"><img src="/assets/icons/sun.svg" alt="" class="mb-3 h-5 w-5" /><span class="block text-sm font-bold">Light</span></button>
+        <button type="button" (click)="theme.toggle('dark')" class="rounded-lg border p-4 text-left" [class.border-primary]="theme.mode() === 'dark'" [class.bg-muted]="theme.mode() === 'dark'" [class.border-border]="theme.mode() !== 'dark'"><img src="/assets/icons/moon.svg" alt="" class="mb-3 h-5 w-5" /><span class="block text-sm font-bold">Dark</span></button>
+      </div>
+    </section>
+    <section class="rounded-[10px] border border-border bg-card p-6"><h2 class="text-lg font-bold">Security</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Your session is protected by the authenticated ChangeX API token. Sign out from the sidebar when using a shared device.</p></section>
   </div>
-  <dl class="space-y-4 text-sm">
-    <div><dt class="text-muted-foreground">Email</dt><dd class="font-medium">{{ auth.user()?.email }}</dd></div>
-    <div><dt class="text-muted-foreground">Role</dt><dd class="font-medium">{{ auth.user()?.role }}</dd></div>
-  </dl>
-</section>
+</div>

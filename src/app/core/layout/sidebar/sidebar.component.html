@@ -1,85 +1,65 @@
-﻿<aside class="flex h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-    <div class="flex items-center gap-3 px-6 py-7">
-    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-sm font-bold">CX</div>
+<aside
+  class="sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col gap-10 p-6 text-sidebar-foreground lg:flex"
+  [class.bg-sidebar-admin]="auth.isAdmin()"
+  [class.bg-sidebar]="!auth.isAdmin()"
+>
+  <div class="flex h-9 items-center gap-3">
+    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[18px] font-bold text-primary">CX</div>
     <div>
-      <span class="text-lg font-semibold tracking-tight">ChangeX</span>
+      <span class="text-lg font-bold tracking-tight">ChangeX</span>
       @if (auth.isAdmin()) {
-        <p class="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">Vendor Admin</p>
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-approve">Vendor Admin</p>
       }
     </div>
   </div>
 
-  <nav class="flex flex-1 flex-col gap-1 px-4">
+  <nav class="flex flex-1 flex-col gap-2">
     @for (link of links(); track link.path) {
       <a
         [routerLink]="link.path"
         routerLinkActive="bg-sidebar-active text-white"
         [routerLinkActiveOptions]="{ exact: link.path === '/dashboard' }"
-        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-muted transition hover:bg-sidebar-active hover:text-white"
+        class="flex h-11 items-center gap-3 rounded-lg px-4 text-[15px] font-medium text-white transition hover:bg-sidebar-active"
       >
-        <span class="inline-flex h-5 w-5 items-center justify-center opacity-90">
-          @switch (link.icon) {
-            @case ('grid') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            }
-            @case ('folder') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            }
-            @case ('file') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-            }
-            @case ('check') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            }
-            @case ('card') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-            }
-            @case ('users') {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            }
-            @default {
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
-            }
-          }
+        <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden">
+          <img [src]="iconPath(link.icon)" alt="" class="h-5 w-5" />
         </span>
         {{ link.label }}
       </a>
     }
   </nav>
 
-  <div class="px-4 pb-6">
-    <div class="mb-4 flex items-center rounded-full bg-white/10 p-1 text-xs">
+  <div>
+    <div class="mx-1 mb-9 flex h-9 items-center rounded-full bg-[#452173] p-[3px] text-xs">
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded-full px-3 py-1.5"
-        [class.bg-white]="theme.mode() === 'light'"
-        [class.text-primary]="theme.mode() === 'light'"
-        [class.text-sidebar-muted]="theme.mode() !== 'light'"
+        class="flex h-[30px] flex-1 items-center justify-center gap-1.5 rounded-full px-3"
+        [class.bg-sidebar-active]="theme.mode() === 'light'"
+        [class.text-white]="theme.mode() === 'light'"
+        [class.text-sidebar-muted]="theme.mode() === 'dark'"
         (click)="theme.toggle('light')"
       >
-        <span>☀</span> Light
+        <img src="/assets/icons/sun.svg" alt="" class="h-3.5 w-3.5" /> Light
       </button>
       <button
         type="button"
-        class="flex flex-1 items-center justify-center gap-1 rounded-full px-3 py-1.5"
-        [class.bg-white]="theme.mode() === 'dark'"
-        [class.text-primary]="theme.mode() === 'dark'"
-        [class.text-sidebar-muted]="theme.mode() !== 'dark'"
+        class="flex h-[30px] flex-1 items-center justify-center gap-1.5 rounded-full px-3"
+        [class.bg-sidebar-active]="theme.mode() === 'dark'"
+        [class.text-white]="theme.mode() === 'dark'"
+        [class.text-sidebar-muted]="theme.mode() === 'light'"
         (click)="theme.toggle('dark')"
       >
-        Dark
+        <img src="/assets/icons/moon.svg" alt="" class="h-3.5 w-3.5" /> Dark
       </button>
     </div>
 
-    <div class="flex items-center gap-3 rounded-xl px-2">
-      <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xs font-semibold">
-        {{ auth.user()?.name?.charAt(0) }}
-      </div>
+    <div class="flex items-center gap-3 border-t border-white/10 pt-4">
+      <img [src]="avatarPath()" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover" />
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium">{{ auth.user()?.name }}</p>
-        <p class="truncate text-xs text-sidebar-muted">{{ auth.user()?.company }}</p>
+        <p class="truncate text-sm font-semibold">{{ auth.user()?.name }}</p>
+        <p class="truncate text-xs text-[#8bbfb8]">{{ auth.user()?.company }}</p>
       </div>
-      <button type="button" class="text-xs text-sidebar-muted hover:text-white" (click)="logout()">Out</button>
+      <button type="button" class="text-xs text-sidebar-muted hover:text-white" (click)="logout()" aria-label="Sign out">Out</button>
     </div>
   </div>
 </aside>

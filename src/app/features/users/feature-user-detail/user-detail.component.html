@@ -1,0 +1,13 @@
+@if (loading()) {
+  <div class="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">Loading user…</div>
+} @else if (error()) {
+  <div class="rounded-xl border border-destructive/30 bg-card p-10 text-center"><p class="text-destructive">{{ error() }}</p><button type="button" class="mt-4 font-semibold text-primary underline" (click)="load()">Retry</button></div>
+} @else {
+  @if (user(); as item) {
+    <nav class="mb-4 text-sm text-muted-foreground"><a routerLink="/users" class="hover:text-primary">Users</a><span class="mx-2">›</span><span>{{ item.name }}</span></nav>
+    <header class="mb-8 flex flex-wrap items-center justify-between gap-4"><div><h1 class="text-[28px] font-bold">{{ item.name }}</h1><p class="mt-1 text-sm text-muted-foreground">{{ item.accountType }}</p></div><div class="flex gap-3"><a [routerLink]="['/users', item.id, 'edit']" class="inline-flex h-10 items-center rounded-lg border border-border px-5 text-sm font-semibold">Edit</a><button type="button" [disabled]="deleting()" (click)="deleteUser(item)" class="h-10 rounded-lg border border-destructive px-5 text-sm font-semibold text-destructive disabled:opacity-50">{{ deleting() ? 'Deleting…' : 'Delete' }}</button></div></header>
+    <section class="max-w-3xl rounded-xl border border-border bg-card p-6"><dl class="grid gap-6 sm:grid-cols-2"><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Email</dt><dd class="mt-1 font-semibold">{{ item.email }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Phone</dt><dd class="mt-1 font-semibold">{{ item.phoneNumber || '—' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Client</dt><dd class="mt-1 font-semibold">{{ item.company || '—' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted-foreground">User ID</dt><dd class="mt-1 break-all font-mono text-xs">{{ item.id }}</dd></div></dl></section>
+  } @else {
+    <div class="rounded-xl border border-border bg-card p-12 text-center"><h2 class="font-bold">User not found</h2><a routerLink="/users" class="mt-3 inline-block text-sm font-semibold text-primary">Return to users</a></div>
+  }
+}

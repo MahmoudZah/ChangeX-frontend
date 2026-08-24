@@ -1,11 +1,29 @@
-﻿export interface Project {
+export type ProjectState = 'Active' | 'Completed' | 'Canceled';
+
+export interface ProjectResponseDto {
   id: string;
   name: string;
   description: string;
   scope: string;
-  userId: string;
+  clientID: string;
+  client: unknown | null;
+  state: number;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  scope: string;
   clientId: string;
-  state: 'Active' | 'Inactive';
-  changeRequestCount: number;
-  lastUpdated: string;
+  clientName: string;
+  state: ProjectState;
+}
+
+export interface ProjectDto {
+  name: string;
+  description: string;
+  scope: string;
+  clientID: string;
+  state: number;
 }

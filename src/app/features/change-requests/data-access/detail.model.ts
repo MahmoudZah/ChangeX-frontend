@@ -1,15 +1,19 @@
-﻿export interface CrComment {
+export interface DetailResponseDto {
   id: string;
-  crId: string;
-  author: string;
-  body: string;
-  createdAt: string;
+  crid: string;
+  attachment: string;
+  comment: string;
+  state: string;
+  uploadedTime: string;
 }
 
-export interface CrAttachment {
+export interface CrDetail {
   id: string;
   crId: string;
+  attachmentUrl: string;
   fileName: string;
   fileType: string;
+  comment: string;
+  state: string;
   uploadedAt: string;
 }

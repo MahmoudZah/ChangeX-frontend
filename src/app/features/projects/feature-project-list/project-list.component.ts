@@ -1,29 +1,49 @@
-﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '@/core/auth/auth.service';
+import { apiErrorMessage } from '@/core/http/api-contract';
+import { ClientsService } from '@/features/clients/data-access/clients.service';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
-import { formatRelative } from '@/shared/util/formatters';
 
-@Component({
-  selector: 'app-project-list',
-  standalone: true,
-  imports: [RouterLink, StatusBadgeComponent],
-  templateUrl: './project-list.component.html',
-})
+@Component({ selector: 'app-project-list', standalone: true, imports: [RouterLink, StatusBadgeComponent], templateUrl: './project-list.component.html' })
 export class ProjectListComponent implements OnInit {
   private projectsService = inject(ProjectsService);
+  readonly auth = inject(AuthService);
+  readonly clientsService = inject(ClientsService);
   readonly projects = this.projectsService.projects;
-  readonly formatRelative = formatRelative;
-  search = signal('');
+  readonly loading = this.projectsService.loading;
+  readonly apiError = this.projectsService.error;
+  readonly search = signal('');
+  readonly clientFilter = signal('all');
+  readonly stateFilter = signal('all');
+  readonly deletingId = signal('');
+  readonly actionError = signal('');
+  readonly notice = signal((window.history.state as { notice?: string }).notice ?? '');
 
   readonly filtered = computed(() => {
-    const q = this.search().trim().toLowerCase();
-    const list = this.projects();
-    if (!q) return list;
-    return list.filter((p) => p.name.toLowerCase().includes(q));
+    const query = this.search().trim().toLowerCase();
+    const clientId = this.auth.user()?.clientId;
+    return this.projects().filter((project) => {
+      if (!this.auth.isAdmin() && project.clientId !== clientId) return false;
+      if (query && !`${project.name} ${project.clientName} ${project.scope}`.toLowerCase().includes(query)) return false;
+      if (this.clientFilter() !== 'all' && project.clientId !== this.clientFilter()) return false;
+      return this.stateFilter() === 'all' || project.state === this.stateFilter();
+    });
   });
 
-  ngOnInit(): void {
-    void this.projectsService.loadAll();
+  async ngOnInit(): Promise<void> { await this.retry(); }
+  async retry(): Promise<void> { await this.projectsService.loadAll(); }
+  updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); }
+  updateClient(event: Event): void { this.clientFilter.set((event.target as HTMLSelectElement).value); }
+  updateState(event: Event): void { this.stateFilter.set((event.target as HTMLSelectElement).value); }
+
+  async deleteProject(id: string, name: string): Promise<void> {
+    if (this.deletingId() || !window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    this.deletingId.set(id);
+    this.actionError.set('');
+    try { this.notice.set(await this.projectsService.delete(id)); }
+    catch (error) { this.actionError.set(apiErrorMessage(error, 'The project could not be deleted.')); }
+    finally { this.deletingId.set(''); }
   }
 }

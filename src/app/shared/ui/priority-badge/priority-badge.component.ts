@@ -11,7 +11,7 @@ const PRIORITY_CLASS: Record<string, string> = {
   selector: 'app-priority-badge',
   standalone: true,
   template: `
-    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold {{ klass }}">
+    <span class="inline-flex rounded px-2 py-1 text-[11px] font-semibold leading-none {{ klass }}">
       {{ priority }}
     </span>
   `,

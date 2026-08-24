@@ -1,16 +1,15 @@
-export interface CRStatus {
+export interface CRStatusDto {
   id: string;
   currentStatus: string;
-  availableStatusIDs?: string;
-  availableStatuses?: string[];
-  accessedBy?: string;
+  availableStatusIDs: string | null;
+  accessedBy: string;
 }
 
-export interface StatusHistoryEntry {
+export interface CRStatus extends CRStatusDto {
+  availableStatusIDs: string | null;
+}
+
+export interface StatusTransition {
   id: string;
-  crId: string;
-  status: string;
-  changedAt: string;
-  changedBy: string;
-  note?: string;
+  label: string;
 }

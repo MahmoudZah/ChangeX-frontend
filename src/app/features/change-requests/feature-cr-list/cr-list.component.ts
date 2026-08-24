@@ -1,63 +1,65 @@
-﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AuthService } from '@/core/auth/auth.service';
 import { CrsService } from '@/features/change-requests/data-access/crs.service';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
 import { DataTableComponent } from '@/shared/ui/data-table/data-table.component';
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 import { PAGE_SIZE, PRIORITIES } from '@/shared/util/constants';
-import { formatCurrency, formatRelative } from '@/shared/util/formatters';
+import { formatCurrency, formatDate } from '@/shared/util/formatters';
 
-@Component({
-  selector: 'app-cr-list',
-  standalone: true,
-  imports: [RouterLink, DataTableComponent, StatusBadgeComponent, PriorityBadgeComponent],
-  templateUrl: './cr-list.component.html',
-})
+@Component({ selector: 'app-cr-list', standalone: true, imports: [RouterLink, DataTableComponent, StatusBadgeComponent, PriorityBadgeComponent], templateUrl: './cr-list.component.html' })
 export class CrListComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private auth = inject(AuthService);
   private crsService = inject(CrsService);
   private projectsService = inject(ProjectsService);
-
   readonly crs = this.crsService.crs;
-  readonly projects = this.projectsService.projects;
+  readonly loading = this.crsService.loading;
+  readonly apiError = this.crsService.error;
   readonly priorities = PRIORITIES;
   readonly formatCurrency = formatCurrency;
-  readonly formatRelative = formatRelative;
+  readonly formatDate = formatDate;
   readonly Math = Math;
   readonly pageSize = PAGE_SIZE;
-
-  search = signal('');
-  projectFilter = signal('all');
-  statusFilter = signal('all');
-  priorityFilter = signal('all');
-  page = signal(1);
-
+  readonly isAdmin = this.auth.isAdmin;
+  readonly search = signal('');
+  readonly projectFilter = signal('all');
+  readonly statusFilter = signal('all');
+  readonly priorityFilter = signal('all');
+  readonly page = signal(1);
+  readonly view = signal<'board' | 'list'>('board');
+  readonly projects = computed(() => this.isAdmin()
+    ? this.projectsService.projects()
+    : this.projectsService.projects().filter((project) => project.clientId === this.auth.user()?.clientId));
   readonly statuses = computed(() => [...new Set(this.crs().map((cr) => cr.status))].sort());
-
   readonly filtered = computed(() => {
-    const q = this.search().trim().toLowerCase();
+    const query = this.search().trim().toLowerCase();
     return this.crs().filter((cr) => {
-      if (q && !`${cr.code} ${cr.title}`.toLowerCase().includes(q)) return false;
+      if (query && !`${cr.code} ${cr.title} ${cr.projectName}`.toLowerCase().includes(query)) return false;
       if (this.projectFilter() !== 'all' && cr.projectId !== this.projectFilter()) return false;
       if (this.statusFilter() !== 'all' && cr.status !== this.statusFilter()) return false;
-      if (this.priorityFilter() !== 'all' && cr.priority !== this.priorityFilter()) return false;
-      return true;
+      return this.priorityFilter() === 'all' || cr.priority === this.priorityFilter();
     });
   });
-
-  readonly paged = computed(() => {
-    const start = (this.page() - 1) * PAGE_SIZE;
-    return this.filtered().slice(start, start + PAGE_SIZE);
-  });
-
+  readonly paged = computed(() => this.filtered().slice((this.page() - 1) * PAGE_SIZE, this.page() * PAGE_SIZE));
   readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  readonly boardColumns = computed(() => [
+    { key: 'incoming', title: 'New & Estimating', color: '#65dcd5', items: this.filtered().filter((cr) => ['Estimating', 'Analysis'].includes(cr.stage)) },
+    { key: 'review', title: 'Review & Approval', color: '#f5a623', items: this.filtered().filter((cr) => ['Reviewing', 'Scheduled'].includes(cr.stage)) },
+    { key: 'progress', title: 'In Progress', color: '#6366f1', items: this.filtered().filter((cr) => ['Design Prep', 'Development', 'Testing'].includes(cr.stage)) },
+    { key: 'done', title: 'Delivered', color: '#22a06b', items: this.filtered().filter((cr) => ['Completed', 'Archived'].includes(cr.stage)) },
+  ]);
 
-  ngOnInit(): void {
-    void this.crsService.loadAll();
-    void this.projectsService.loadAll();
+  async ngOnInit(): Promise<void> {
+    this.projectFilter.set(this.route.snapshot.queryParamMap.get('projectId') ?? 'all');
+    await Promise.all([this.projectsService.loadAll(), this.crsService.loadAll()]);
   }
-
-  setPage(next: number): void {
-    this.page.set(Math.min(Math.max(1, next), this.pageCount()));
-  }
+  async retry(): Promise<void> { await this.crsService.loadAll(); }
+  updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); this.page.set(1); }
+  updateProject(event: Event): void { this.projectFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
+  updateStatus(event: Event): void { this.statusFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
+  updatePriority(event: Event): void { this.priorityFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
+  setPage(next: number): void { this.page.set(Math.min(Math.max(1, next), this.pageCount())); }
 }

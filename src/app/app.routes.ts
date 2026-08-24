@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '@/core/auth/auth.guard';
+import { anonymousGuard, authGuard } from '@/core/auth/auth.guard';
 import { roleGuard } from '@/core/auth/role.guard';
 import { ShellComponent } from '@/core/layout/shell/shell.component';
 
 export const routes: Routes = [
   {
     path: 'login',
+    canActivate: [anonymousGuard],
     loadChildren: () => import('@/features/auth/feature-login/login.routes').then((m) => m.LOGIN_ROUTES),
   },
   {
@@ -34,11 +35,23 @@ export const routes: Routes = [
           import('@/features/change-requests/change-requests.routes').then((m) => m.CR_ROUTES),
       },
       {
+        path: 'estimates',
+        canActivate: [roleGuard(['Admin'])],
+        loadComponent: () =>
+          import('@/features/change-requests/feature-estimates-list/estimates-list.component').then((m) => m.EstimatesListComponent),
+      },
+      {
         path: 'approvals',
+        canActivate: [roleGuard(['UserAdmin', 'User'])],
         loadComponent: () =>
           import('@/features/change-requests/feature-approvals-list/approvals-list.component').then(
             (m) => m.ApprovalsListComponent,
           ),
+      },
+      {
+        path: 'invoices/:id',
+        loadComponent: () =>
+          import('@/features/invoices/feature-invoice-detail/invoice-detail.component').then((m) => m.InvoiceDetailComponent),
       },
       {
         path: 'invoices',

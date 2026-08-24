@@ -7,6 +7,7 @@
 
 export function formatDate(value: string | Date): string {
   const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '—';
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -16,6 +17,7 @@ export function formatDate(value: string | Date): string {
 
 export function formatRelative(value: string | Date): string {
   const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '—';
   const diffMs = Date.now() - date.getTime();
   const hours = Math.round(diffMs / 36e5);
   if (hours < 1) return 'Just now';

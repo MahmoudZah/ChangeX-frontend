@@ -1,23 +1,14 @@
-<div class="mb-8">
-  <h1 class="text-3xl font-bold tracking-tight">Invoices</h1>
-  <p class="mt-1 text-muted-foreground">Review open and paid invoices tied to change requests</p>
-</div>
+<header class="mb-8">
+  <h1 class="text-[28px] font-bold">{{ isAdmin() ? 'Invoice Management' : 'Invoices' }}</h1>
+  <p class="mt-1 text-sm text-muted-foreground">Billing information for ChangeX workspaces</p>
+</header>
 
-<app-data-table [total]="invoices().length" [from]="1" [to]="invoices().length">
-  <tr header>
-    <th class="px-4 py-3">Invoice</th>
-    <th class="px-4 py-3">Change Request</th>
-    <th class="px-4 py-3">Amount</th>
-    <th class="px-4 py-3">Due Date</th>
-    <th class="px-4 py-3">Status</th>
-  </tr>
-  @for (inv of invoices(); track inv.id) {
-    <tr body class="border-t border-border hover:bg-muted/30">
-      <td class="px-4 py-3 font-semibold">{{ inv.id }}</td>
-      <td class="px-4 py-3 text-muted-foreground">{{ inv.crCode ?? inv.crId }}</td>
-      <td class="px-4 py-3">{{ formatCurrency(inv.amount ?? inv.cost ?? 0) }}</td>
-      <td class="px-4 py-3 text-muted-foreground">{{ formatDate(inv.dueDate ?? inv.createdAt ?? '') }}</td>
-      <td class="px-4 py-3"><app-status-badge [status]="inv.state ?? inv.status ?? 'Open'" /></td>
-    </tr>
-  }
-</app-data-table>
+<section class="mx-auto max-w-2xl rounded-[10px] border border-border bg-card px-6 py-12 text-center md:px-10">
+  <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+    <img src="/assets/icons/file.svg" alt="" class="h-6 w-6" />
+  </div>
+  <h2 class="mt-5 text-lg font-bold">Invoice data is unavailable</h2>
+  <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+    {{ unavailableMessage }} No totals, payment states, or invoice actions can be shown reliably.
+  </p>
+</section>

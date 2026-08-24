@@ -1,1 +1,6 @@
-﻿// Placeholder: CR estimation tab
+import { CurrencyPipe } from '@angular/common';
+import { Component, Input } from '@angular/core';
+import { ChangeRequest } from '@/features/change-requests/data-access/cr.model';
+
+@Component({ selector: 'app-cr-estimation-tab', standalone: true, imports: [CurrencyPipe], template: `<section class="rounded-[10px] border border-border bg-card p-6"><h2 class="text-lg font-bold">Engineering Estimate</h2><dl class="mt-5 grid gap-4 sm:grid-cols-3"><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Hours</dt><dd class="mt-1 text-xl font-bold">{{ cr.estimatedHours }}</dd></div><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Rate</dt><dd class="mt-1 text-xl font-bold">{{ cr.hourlyRate | currency:'USD' }}/hr</dd></div><div><dt class="text-xs font-semibold uppercase text-muted-foreground">Total</dt><dd class="mt-1 text-xl font-bold">{{ cr.estimatedCost | currency:'USD' }}</dd></div></dl><p class="mt-6 rounded-lg border border-[#f5a623]/40 bg-[#fff9ed] px-4 py-3 text-sm text-muted-foreground">The backend exposes an estimate update endpoint, but its active AutoMapper configuration has no EstimateCRDto-to-CR mapping. Editing is disabled so the UI does not offer an action that the server cannot complete.</p></section>` })
+export class EstimationComponent { @Input({ required: true }) cr!: ChangeRequest; }

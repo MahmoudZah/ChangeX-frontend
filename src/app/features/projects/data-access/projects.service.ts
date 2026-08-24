@@ -1,63 +1,119 @@
-﻿import { Injectable, signal } from '@angular/core';
-import { Project } from '@/features/projects/data-access/project.model';
+import { Injectable, inject, signal } from '@angular/core';
+import { ApiEnvelope, SerializedTask, apiErrorMessage } from '@/core/http/api-contract';
+import { ApiService } from '@/core/http/api.service';
+import { ClientsService } from '@/features/clients/data-access/clients.service';
+import { Project, ProjectDto, ProjectResponseDto, ProjectState } from '@/features/projects/data-access/project.model';
 
-const MOCK: Project[] = [
-  {
-    id: 'p1',
-    name: 'E-Commerce Replatform',
-    description: 'Migrate storefront, checkout, and catalog services to the new commerce stack.',
-    scope: 'Storefront, checkout, HubSpot sync',
-    userId: 'u-sarah',
-    clientId: 'c1',
-    state: 'Active',
-    changeRequestCount: 8,
-    lastUpdated: '2026-08-17T10:00:00Z',
-  },
-  {
-    id: 'p2',
-    name: 'Marketing Website Refresh',
-    description: 'New brand system, landing pages, and CMS content model for campaign launches.',
-    scope: 'CMS, design system, analytics',
-    userId: 'u-sarah',
-    clientId: 'c1',
-    state: 'Active',
-    changeRequestCount: 3,
-    lastUpdated: '2026-08-15T14:00:00Z',
-  },
-  {
-    id: 'p3',
-    name: 'Internal Tools Portal',
-    description: 'Unified ops portal for support, billing adjustments, and order lookups.',
-    scope: 'Auth, tickets, reporting',
-    userId: 'u-sarah',
-    clientId: 'c1',
-    state: 'Active',
-    changeRequestCount: 5,
-    lastUpdated: '2026-08-12T09:00:00Z',
-  },
-  {
-    id: 'p4',
-    name: 'Data Warehouse Migration',
-    description: 'Move analytics pipelines off the legacy warehouse into the new lakehouse.',
-    scope: 'ETL, dashboards, access control',
-    userId: 'u-sarah',
-    clientId: 'c1',
-    state: 'Inactive',
-    changeRequestCount: 2,
-    lastUpdated: '2026-07-30T16:00:00Z',
-  },
-];
+type ProjectTaskEnvelope<T> = ApiEnvelope<SerializedTask<T>>;
 
 @Injectable({ providedIn: 'root' })
 export class ProjectsService {
-  private _projects = signal<Project[]>(MOCK);
-  readonly projects = this._projects.asReadonly();
+  private api = inject(ApiService);
+  private clients = inject(ClientsService);
+  private _projects = signal<Project[]>([]);
+  private _loading = signal(false);
+  private _error = signal('');
+  private _lastMessage = signal('');
 
-  async loadAll(): Promise<void> {
-    this._projects.set(MOCK);
+  readonly projects = this._projects.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
+  readonly lastMessage = this._lastMessage.asReadonly();
+
+  async loadAll(clientId?: string): Promise<Project[]> {
+    this._loading.set(true);
+    this._error.set('');
+    try {
+      const [response] = await Promise.all([
+        this.api.get<ProjectTaskEnvelope<ProjectResponseDto[]>>('/ProjectAdmin'),
+        this.clients.loadAll(),
+      ]);
+      const projects = response.data.result.map((item) => this.normalize(item));
+      this._projects.set(projects);
+      return clientId ? projects.filter((project) => project.clientId === clientId) : projects;
+    } catch (error) {
+      this._projects.set([]);
+      this._error.set(apiErrorMessage(error, 'Projects could not be loaded from the API.'));
+      return [];
+    } finally {
+      this._loading.set(false);
+    }
   }
 
   getById(id: string): Project | undefined {
-    return this._projects().find((p) => p.id === id);
+    return this._projects().find((project) => project.id === id);
+  }
+
+  async loadById(id: string): Promise<Project | null> {
+    this._error.set('');
+    try {
+      if (!this.clients.clients().length) await this.clients.loadAll();
+      const response = await this.api.get<ProjectTaskEnvelope<ProjectResponseDto | null>>(`/ProjectAdmin/${id}`);
+      if (!response.data.result) return null;
+      const project = this.normalize(response.data.result);
+      this._projects.update((current) => [...current.filter((item) => item.id !== id), project]);
+      return project;
+    } catch (error) {
+      this._error.set(apiErrorMessage(error, 'The project could not be loaded from the API.'));
+      throw error;
+    }
+  }
+
+  async create(dto: ProjectDto): Promise<Project> {
+    this._lastMessage.set('');
+    const response = await this.api.post<ProjectTaskEnvelope<ProjectResponseDto>>('/ProjectAdmin', dto);
+    const project = this.normalize(response.data.result);
+    this._projects.update((current) => [...current, project]);
+    this._lastMessage.set(response.message);
+    return project;
+  }
+
+  async update(id: string, dto: ProjectDto): Promise<Project> {
+    this._lastMessage.set('');
+    const response = await this.api.put<ProjectTaskEnvelope<ProjectResponseDto | null>>(`/ProjectAdmin/${id}`, dto);
+    if (!response.data.result) throw new Error('The project no longer exists.');
+    const project = this.normalize(response.data.result);
+    this._projects.update((current) => current.map((item) => item.id === id ? project : item));
+    this._lastMessage.set(response.message);
+    return project;
+  }
+
+  async delete(id: string): Promise<string> {
+    this._lastMessage.set('');
+    let controllerError: unknown;
+    try {
+      await this.api.delete<ApiEnvelope<never>>(`/ProjectAdmin/${id}`);
+    } catch (error) {
+      controllerError = error;
+      if ((error as { status?: number }).status !== 404) throw error;
+    }
+
+    const projects = await this.loadAll();
+    if (this._error()) throw controllerError ?? new Error(this._error());
+    if (projects.some((project) => project.id === id)) {
+      throw controllerError ?? new Error('The API did not delete the project.');
+    }
+
+    const message = 'Project deleted successfully.';
+    this._lastMessage.set(message);
+    return message;
+  }
+
+  private normalize(raw: ProjectResponseDto): Project {
+    return {
+      id: raw.id,
+      name: raw.name,
+      description: raw.description,
+      scope: raw.scope,
+      clientId: raw.clientID,
+      clientName: this.clients.getById(raw.clientID)?.name ?? '',
+      state: this.normalizeState(raw.state),
+    };
+  }
+
+  private normalizeState(value: number): ProjectState {
+    if (value === 1) return 'Completed';
+    if (value === 2) return 'Canceled';
+    return 'Active';
   }
 }
