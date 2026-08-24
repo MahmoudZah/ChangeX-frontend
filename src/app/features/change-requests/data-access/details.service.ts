@@ -40,7 +40,7 @@ export class DetailsService {
     }
   }
 
-  async create(crId: string, comment: string, attachment: File): Promise<CrDetail> {
+  async create(crId: string, comment: string, attachment?: File): Promise<CrDetail> {
     this._lastMessage.set('');
     const form = this.buildForm(crId, comment, attachment);
     const response = await this.api.post<ApiEnvelope<DetailResponseDto>>('/Detail', form);
@@ -48,6 +48,21 @@ export class DetailsService {
     this._details.update((current) => [...current, detail]);
     this._lastMessage.set(response.message);
     return detail;
+  }
+
+  async createReworkContext(crId: string, message: string, files: readonly File[]): Promise<CrDetail[]> {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage && !files.length) {
+      throw new Error('Please add a message or attach at least one file.');
+    }
+
+    if (!files.length) return [await this.create(crId, trimmedMessage)];
+
+    const created: CrDetail[] = [];
+    for (const [index, file] of files.entries()) {
+      created.push(await this.create(crId, index === 0 ? trimmedMessage : '', file));
+    }
+    return created;
   }
 
   async update(id: string, crId: string, comment: string, attachment?: File): Promise<CrDetail> {

@@ -9,6 +9,16 @@ import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.comp
 import { PAGE_SIZE, PRIORITIES } from '@/shared/util/constants';
 import { formatCurrency, formatDate } from '@/shared/util/formatters';
 
+export const CR_TABLE_COLUMNS = [
+  { key: 'change-request', label: 'Change Request', headerClass: 'px-4 py-3' },
+  { key: 'project', label: 'Project', headerClass: 'px-4 py-3' },
+  { key: 'priority', label: 'Priority', headerClass: 'px-4 py-3' },
+  { key: 'status', label: 'Status', headerClass: 'px-4 py-3' },
+  { key: 'estimate', label: 'Estimate', headerClass: 'px-4 py-3' },
+  { key: 'finish-date', label: 'Finish Date', headerClass: 'px-4 py-3' },
+  { key: 'actions', label: 'Actions', headerClass: 'px-4 py-3 text-right' },
+] as const;
+
 @Component({ selector: 'app-cr-list', standalone: true, imports: [RouterLink, DataTableComponent, StatusBadgeComponent, PriorityBadgeComponent], templateUrl: './cr-list.component.html' })
 export class CrListComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -23,6 +33,7 @@ export class CrListComponent implements OnInit {
   readonly formatDate = formatDate;
   readonly Math = Math;
   readonly pageSize = PAGE_SIZE;
+  readonly tableColumns = CR_TABLE_COLUMNS;
   readonly isAdmin = this.auth.isAdmin;
   readonly search = signal('');
   readonly projectFilter = signal('all');

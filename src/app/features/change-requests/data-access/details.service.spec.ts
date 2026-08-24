@@ -73,4 +73,54 @@ describe('DetailsService', () => {
 
     expect(updated.fileName).toBe('');
   });
+
+  it('builds a message-only Rework request without inventing an attachment', async () => {
+    api.post.and.callFake(((_path: string, body: unknown) => {
+      const form = body as FormData;
+      expect(form.get('Comment')).toBe('Please revise the layout.');
+      expect(form.has('Attachment')).toBeFalse();
+      return Promise.resolve({
+        message: 'created',
+        data: {
+          id: 'detail-id', crid: 'cr-id', attachment: '', comment: 'Please revise the layout.',
+          state: 'Pending Customer Approval', uploadedTime: '2026-08-25T10:00:00',
+        },
+      });
+    }) as ApiService['post']);
+
+    const created = await TestBed.inject(DetailsService).createReworkContext(
+      'cr-id',
+      '  Please revise the layout.  ',
+      [],
+    );
+
+    expect(created.length).toBe(1);
+    expect(api.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates one backend Detail per Rework file and keeps the message on the first', async () => {
+    const comments: string[] = [];
+    api.post.and.callFake(((_path: string, body: unknown) => {
+      const form = body as FormData;
+      const file = form.get('Attachment') as File;
+      comments.push(String(form.get('Comment') ?? ''));
+      return Promise.resolve({
+        message: 'created',
+        data: {
+          id: `detail-${comments.length}`, crid: 'cr-id', attachment: `/attachments/details/${file.name}`,
+          comment: comments.at(-1) ?? '', state: 'Pending Customer Approval',
+          uploadedTime: '2026-08-25T10:00:00',
+        },
+      });
+    }) as ApiService['post']);
+    const files = [
+      new File(['one'], 'one.png', { type: 'image/png' }),
+      new File(['two'], 'two.png', { type: 'image/png' }),
+    ];
+
+    await TestBed.inject(DetailsService).createReworkContext('cr-id', 'Reason', files);
+
+    expect(api.post).toHaveBeenCalledTimes(2);
+    expect(comments).toEqual(['Reason', '']);
+  });
 });

@@ -8,9 +8,7 @@
       <div class="overflow-x-auto px-6 pt-3">
         <table class="w-full min-w-[900px] text-left text-sm">
           <thead class="border-b border-border text-xs font-semibold uppercase text-muted-foreground">
-            <tr>
-              <ng-content select="[header]" />
-            </tr>
+            <ng-content select="[header]" />
           </thead>
           <tbody>
             <ng-content select="[body]" />
