@@ -4,12 +4,14 @@ import { AuthService } from '@/core/auth/auth.service';
 import { apiErrorMessage } from '@/core/http/api-contract';
 import { Project } from '@/features/projects/data-access/project.model';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 
 @Component({ selector: 'app-project-detail', standalone: true, imports: [RouterLink, StatusBadgeComponent], templateUrl: './project-detail.component.html' })
 export class ProjectDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly projectsService = inject(ProjectsService);
   readonly auth = inject(AuthService);
   readonly project = signal<Project | null>(null);
@@ -31,10 +33,20 @@ export class ProjectDetailComponent implements OnInit {
   }
 
   async deleteProject(item: Project): Promise<void> {
-    if (this.deleting() || !window.confirm(`Delete ${item.name}? This cannot be undone.`)) return;
+    if (this.deleting()) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete Project',
+      message: `Delete "${item.name}"? This action cannot be undone and will permanently remove this project.`,
+      confirmText: 'Delete Project',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.deleting.set(true); this.error.set('');
     try { const notice = await this.projectsService.delete(item.id); await this.router.navigate(['/projects'], { state: { notice } }); }
     catch (error) { this.error.set(apiErrorMessage(error, 'The project could not be deleted.')); }
     finally { this.deleting.set(false); }
   }
 }
+

@@ -2,10 +2,12 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '@/core/http/api-contract';
 import { UsersService } from '@/features/users/data-access/users.service';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 
 @Component({ selector: 'app-user-list', standalone: true, imports: [RouterLink], templateUrl: './user-list.component.html' })
 export class UserListComponent implements OnInit {
   private usersService = inject(UsersService);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly users = this.usersService.users;
   readonly loading = this.usersService.loading;
   readonly apiError = this.usersService.error;
@@ -29,10 +31,20 @@ export class UserListComponent implements OnInit {
   updateRole(event: Event): void { this.roleFilter.set((event.target as HTMLSelectElement).value); }
 
   async deleteUser(id: string, name: string): Promise<void> {
-    if (this.deletingId() || !window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    if (this.deletingId()) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete User',
+      message: `Delete "${name}"? This action cannot be undone and will revoke all access for this user account.`,
+      confirmText: 'Delete User',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.deletingId.set(id); this.actionError.set('');
     try { this.notice.set(await this.usersService.delete(id)); }
     catch (error) { this.actionError.set(apiErrorMessage(error, 'The user could not be deleted.')); }
     finally { this.deletingId.set(''); }
   }
 }
+

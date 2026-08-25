@@ -15,6 +15,7 @@ import { CrStatusTimelineTabComponent } from '@/features/change-requests/feature
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 import { StepItem, StepperComponent } from '@/shared/ui/stepper/stepper.component';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 import { formatDate } from '@/shared/util/formatters';
 
 type Tab = 'overview' | 'estimate' | 'timeline' | 'comments';
@@ -43,7 +44,9 @@ export class CrDetailComponent implements OnInit {
   private crs = inject(CrsService);
   private auth = inject(AuthService);
   private details = inject(DetailsService);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly statuses = inject(StatusesService);
+
   readonly formatDate = formatDate;
   readonly isAdmin = this.auth.isAdmin;
   readonly cr = signal<ChangeRequest | null>(null);
@@ -203,7 +206,16 @@ export class CrDetailComponent implements OnInit {
   }
 
   async deleteCr(item: ChangeRequest): Promise<void> {
-    if (this.busy() || !window.confirm(`Delete ${item.name}? This cannot be undone.`)) return;
+    if (this.busy()) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete Change Request',
+      message: `Delete "${item.name}"? This action cannot be undone and will permanently remove this change request and its attachments.`,
+      confirmText: 'Delete CR',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.busy.set(true); this.error.set('');
     try { const notice = await this.crs.delete(item.id); await this.router.navigate(['/change-requests'], { state: { notice } }); }
     catch (error) { this.error.set(apiErrorMessage(error, 'The change request could not be deleted.')); }

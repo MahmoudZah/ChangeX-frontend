@@ -5,12 +5,14 @@ import { Client } from '@/features/clients/data-access/client.model';
 import { ClientsService } from '@/features/clients/data-access/clients.service';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
 import { UsersService } from '@/features/users/data-access/users.service';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 
 @Component({ selector: 'app-client-detail', standalone: true, imports: [RouterLink, StatusBadgeComponent], templateUrl: './client-detail.component.html' })
 export class ClientDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly clientsService = inject(ClientsService);
   readonly projectsService = inject(ProjectsService);
   private usersService = inject(UsersService);
@@ -40,7 +42,16 @@ export class ClientDetailComponent implements OnInit {
   }
 
   async deleteClient(item: Client): Promise<void> {
-    if (this.deleting() || !window.confirm(`Delete ${item.name}? This cannot be undone.`)) return;
+    if (this.deleting()) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete Client',
+      message: `Delete "${item.name}"? This action cannot be undone and will permanently remove this client account.`,
+      confirmText: 'Delete Client',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.deleting.set(true);
     this.error.set('');
     try {
@@ -51,3 +62,4 @@ export class ClientDetailComponent implements OnInit {
     } finally { this.deleting.set(false); }
   }
 }
+

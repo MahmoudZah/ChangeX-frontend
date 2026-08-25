@@ -62,13 +62,11 @@
         <button
           type="button"
           (click)="theme.toggle('light')"
-          class="group relative rounded-2xl border p-4 text-left transition-all"
+          class="group relative rounded-2xl border p-4 text-left transition-all hover:border-primary"
           [class.border-primary]="theme.mode() === 'light'"
           [class.ring-2]="theme.mode() === 'light'"
-          [class.ring-primary/20]="theme.mode() === 'light'"
           [class.bg-card]="theme.mode() === 'light'"
           [class.border-border]="theme.mode() !== 'light'"
-          [class.hover:border-primary/50]="theme.mode() !== 'light'"
         >
           <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 transition-transform group-hover:scale-105">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -89,13 +87,11 @@
         <button
           type="button"
           (click)="theme.toggle('dark')"
-          class="group relative rounded-2xl border p-4 text-left transition-all"
+          class="group relative rounded-2xl border p-4 text-left transition-all hover:border-primary"
           [class.border-primary]="theme.mode() === 'dark'"
           [class.ring-2]="theme.mode() === 'dark'"
-          [class.ring-primary/20]="theme.mode() === 'dark'"
           [class.bg-card]="theme.mode() === 'dark'"
           [class.border-border]="theme.mode() !== 'dark'"
-          [class.hover:border-primary/50]="theme.mode() !== 'dark'"
         >
           <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 transition-transform group-hover:scale-105">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
