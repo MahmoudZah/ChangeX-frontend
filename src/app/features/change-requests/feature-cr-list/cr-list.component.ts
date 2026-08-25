@@ -6,8 +6,10 @@ import { ProjectsService } from '@/features/projects/data-access/projects.servic
 import { DataTableComponent } from '@/shared/ui/data-table/data-table.component';
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
-import { PAGE_SIZE, PRIORITIES } from '@/shared/util/constants';
+import { PAGE_SIZE, PRIORITIES, STORAGE_KEYS } from '@/shared/util/constants';
 import { formatCurrency, formatDate } from '@/shared/util/formatters';
+
+export type CrListView = 'board' | 'list';
 
 export const CR_TABLE_COLUMNS = [
   { key: 'change-request', label: 'Change Request', headerClass: 'px-4 py-3' },
@@ -40,7 +42,7 @@ export class CrListComponent implements OnInit {
   readonly statusFilter = signal('all');
   readonly priorityFilter = signal('all');
   readonly page = signal(1);
-  readonly view = signal<'board' | 'list'>('board');
+  readonly view = signal<CrListView>(this.savedView());
   readonly projects = computed(() => this.isAdmin()
     ? this.projectsService.projects()
     : this.projectsService.projects().filter((project) => project.clientId === this.auth.user()?.clientId));
@@ -72,5 +74,17 @@ export class CrListComponent implements OnInit {
   updateProject(event: Event): void { this.projectFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
   updateStatus(event: Event): void { this.statusFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
   updatePriority(event: Event): void { this.priorityFilter.set((event.target as HTMLSelectElement).value); this.page.set(1); }
+  setView(next: CrListView): void {
+    this.view.set(next);
+    try { localStorage.setItem(STORAGE_KEYS.crListView, next); } catch { /* Keep the in-memory preference. */ }
+  }
   setPage(next: number): void { this.page.set(Math.min(Math.max(1, next), this.pageCount())); }
+
+  private savedView(): CrListView {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.crListView) === 'list' ? 'list' : 'board';
+    } catch {
+      return 'board';
+    }
+  }
 }

@@ -15,4 +15,5 @@ export const STORAGE_KEYS = {
   token: 'changex.token',
   user: 'changex.user',
   theme: 'changex.theme',
+  crListView: 'changex.change-requests.view',
 } as const;
