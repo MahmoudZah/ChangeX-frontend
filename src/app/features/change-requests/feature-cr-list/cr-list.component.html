@@ -52,8 +52,8 @@
 }
 
 <!-- Filters Bar -->
-<div class="mb-6 flex flex-wrap gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
-  <label class="relative block min-w-[260px] flex-1">
+<div class="mb-6 flex flex-col sm:flex-row flex-wrap gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+  <label class="relative block min-w-[220px] flex-1">
     <span class="sr-only">Search change requests</span>
     <img src="/assets/icons/search.svg" alt="" class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60" />
     <input
@@ -64,36 +64,38 @@
       class="h-10 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-xs outline-none ring-primary focus:ring-2 transition-all"
     />
   </label>
-  <select
-    [value]="projectFilter()"
-    (change)="updateProject($event)"
-    class="h-10 rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
-  >
-    <option value="all">All projects</option>
-    @for (project of projects(); track project.id) {
-      <option [value]="project.id">{{ project.name }}</option>
-    }
-  </select>
-  <select
-    [value]="statusFilter()"
-    (change)="updateStatus($event)"
-    class="h-10 rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
-  >
-    <option value="all">All statuses</option>
-    @for (status of statuses(); track status.id) {
-      <option [value]="status.id">{{ status.label }}</option>
-    }
-  </select>
-  <select
-    [value]="priorityFilter()"
-    (change)="updatePriority($event)"
-    class="h-10 rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
-  >
-    <option value="all">All priorities</option>
-    @for (priority of priorities; track priority) {
-      <option [value]="priority">{{ priority }}</option>
-    }
-  </select>
+  <div class="grid grid-cols-1 sm:flex sm:flex-wrap gap-2.5">
+    <select
+      [value]="projectFilter()"
+      (change)="updateProject($event)"
+      class="h-10 w-full sm:w-auto rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
+    >
+      <option value="all">All projects</option>
+      @for (project of projects(); track project.id) {
+        <option [value]="project.id">{{ project.name }}</option>
+      }
+    </select>
+    <select
+      [value]="statusFilter()"
+      (change)="updateStatus($event)"
+      class="h-10 w-full sm:w-auto rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
+    >
+      <option value="all">All statuses</option>
+      @for (status of statuses(); track status.id) {
+        <option [value]="status.id">{{ status.label }}</option>
+      }
+    </select>
+    <select
+      [value]="priorityFilter()"
+      (change)="updatePriority($event)"
+      class="h-10 w-full sm:w-auto rounded-xl border border-border bg-card px-3 text-xs outline-none ring-primary focus:ring-2"
+    >
+      <option value="all">All priorities</option>
+      @for (priority of priorities; track priority) {
+        <option [value]="priority">{{ priority }}</option>
+      }
+    </select>
+  </div>
 </div>
 
 @if (loading()) {
@@ -102,9 +104,13 @@
     <p class="text-sm">Loading change requests…</p>
   </div>
 } @else if (view() === 'board') {
-  <div role="region" aria-label="Change Request board" class="grid gap-5 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+  <div
+    role="region"
+    aria-label="Change Request board"
+    class="custom-scrollbar flex gap-4.5 overflow-x-auto pb-6 pt-1 snap-x min-[1900px]:grid min-[1900px]:grid-cols-5 min-[1900px]:overflow-visible"
+  >
     @for (column of boardColumns(); track column.key) {
-      <section class="min-h-[440px] rounded-2xl border border-border/80 bg-muted/40 p-4">
+      <section class="w-[295px] min-w-[285px] shrink-0 snap-start rounded-2xl border border-border/80 bg-muted/40 p-4 min-[1900px]:w-auto min-[1900px]:min-w-0 shadow-sm">
         <header class="mb-3.5 flex items-center justify-between px-1">
           <div class="flex items-center gap-2">
             <span class="h-2.5 w-2.5 rounded-full shadow-sm" [style.background]="column.color"></span>
@@ -123,7 +129,7 @@
                 <span class="font-mono text-xs font-bold text-primary">{{ cr.code }}</span>
                 <app-priority-badge [priority]="cr.priority" />
               </div>
-              <h3 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+              <h3 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                 {{ cr.title }}
               </h3>
               <p class="mt-1.5 text-[11px] text-muted-foreground truncate">
@@ -132,7 +138,7 @@
                 }
                 {{ cr.projectName }}
               </p>
-              <div class="mt-3.5 flex items-center justify-between border-t border-border/60 pt-2.5">
+              <div class="mt-3.5 flex flex-wrap items-center justify-between gap-1.5 border-t border-border/60 pt-2.5">
                 <app-status-badge [status]="cr.status" [statusId]="cr.currentStatusID" />
                 <span class="text-[10px] font-semibold text-muted-foreground">{{ cr.daysOpen }}d ago</span>
               </div>

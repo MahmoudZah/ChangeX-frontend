@@ -32,7 +32,8 @@ export class ProjectFormComponent implements OnInit {
       return;
     }
     await this.clients.loadAll();
-    this.clientId = this.route.snapshot.queryParamMap.get('clientId') ?? this.clients.clients()[0]?.id ?? '';
+    const adminClient = this.clients.clients().find(c => c.name.toLowerCase() === 'admin' || c.name.toLowerCase().includes('admin'));
+    this.clientId = this.route.snapshot.queryParamMap.get('clientId') ?? adminClient?.id ?? this.clients.clients()[0]?.id ?? '';
     if (this.projectId) {
       try {
         const project = await this.projects.loadById(this.projectId);

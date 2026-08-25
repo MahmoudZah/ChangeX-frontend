@@ -28,7 +28,8 @@ export class UserFormComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.clientsService.loadAll();
-    this.clientId = this.clients()[0]?.id ?? '';
+    const adminClient = this.clients().find(c => c.name.toLowerCase() === 'admin' || c.name.toLowerCase().includes('admin'));
+    this.clientId = adminClient?.id ?? this.clients()[0]?.id ?? '';
     if (this.id) {
       try {
         const user = await this.usersService.loadById(this.id);
@@ -41,15 +42,30 @@ export class UserFormComponent implements OnInit {
 
   async submit(): Promise<void> {
     if (this.submitting()) return;
-    this.attempted.set(true); this.error.set('');
-    if (!this.name.trim() || !/^\S+@\S+\.\S+$/.test(this.email.trim()) || !this.phoneNumber.trim() || !this.password || !this.clientId) return;
+    this.attempted.set(true);
+    this.error.set('');
+    if (!this.name.trim() || !/^\S+@\S+\.\S+$/.test(this.email.trim()) || !this.phoneNumber.trim() || !this.password) return;
+    if (!this.systemRole && !this.clientId) return;
+
     this.submitting.set(true);
     try {
-      const dto = { name: this.name.trim(), email: this.email.trim(), password: this.password, phoneNumber: this.phoneNumber.trim(), systemRole: this.systemRole, clientID: this.clientId };
-      if (this.id) await this.usersService.update(this.id, dto); else await this.usersService.create(dto);
+      const targetClientId = this.systemRole ? (this.clientId || this.clients()[0]?.id || '') : this.clientId;
+      const dto = {
+        name: this.name.trim(),
+        email: this.email.trim(),
+        password: this.password,
+        phoneNumber: this.phoneNumber.trim(),
+        systemRole: this.systemRole,
+        clientID: targetClientId,
+      };
+      if (this.id) await this.usersService.update(this.id, dto);
+      else await this.usersService.create(dto);
       await this.router.navigate(['/users'], { state: { notice: this.usersService.lastMessage() || 'User saved successfully.' } });
-    } catch (error) { this.error.set(apiErrorMessage(error, 'We could not save this user.')); }
-    finally { this.submitting.set(false); }
+    } catch (error) {
+      this.error.set(apiErrorMessage(error, 'We could not save this user.'));
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   emailInvalid(): boolean {
