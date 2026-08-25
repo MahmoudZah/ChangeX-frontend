@@ -6,6 +6,7 @@ import {
   AvailableStatusDto,
   CRStatus,
   CRStatusDto,
+  isVisibleStatusTransition,
   StatusTransition,
 } from '@/features/change-requests/data-access/status.model';
 
@@ -60,10 +61,9 @@ export class StatusesService {
       if (!availableResponse.data.every((status) => this.isAvailableStatusDto(status))) {
         throw new Error('The API returned an invalid available-status response.');
       }
-      const transitions = availableResponse.data.map((status) => ({
-        id: status.id,
-        label: status.currentStatus,
-      }));
+      const transitions = availableResponse.data
+        .map((status) => ({ id: status.id, label: status.currentStatus }))
+        .filter((transition) => isVisibleStatusTransition(current.currentStatus, transition));
       this._currentByCr.update((map) => ({ ...map, [crId]: current }));
       this._availableByCr.update((map) => ({ ...map, [crId]: transitions }));
       return transitions;

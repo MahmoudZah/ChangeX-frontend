@@ -22,3 +22,12 @@ export interface StatusTransition {
 export function isReworkTransition(transition: StatusTransition): boolean {
   return transition.label.trim().toLowerCase().includes('rework');
 }
+
+export function isVisibleStatusTransition(
+  currentStatus: string,
+  transition: StatusTransition,
+): boolean {
+  const isPendingCustomerApproval = currentStatus.trim().toLowerCase() === 'pending customer approval';
+  const isRejected = transition.label.trim().toLowerCase().startsWith('reject');
+  return !(isPendingCustomerApproval && isRejected);
+}

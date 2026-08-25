@@ -60,6 +60,32 @@ describe('StatusesService', () => {
     expect(service.error()).toContain('Cannot connect');
   });
 
+  it('hides Rejected only while the CR is pending customer approval', async () => {
+    const available = [
+      { id: 'rework-id', currentStatus: 'Rework Required' },
+      { id: 'rejected-id', currentStatus: 'Rejected' },
+      { id: 'accepted-id', currentStatus: 'Accepted (Test)' },
+    ];
+    api.get.and.callFake(((path: string) => Promise.resolve(path.includes('/AvailableCRStatus/')
+      ? { message: 'ok', data: available }
+      : {
+          message: 'ok',
+          data: {
+            id: 'current-id', currentStatus: 'Pending Customer Approval',
+            availableStatusIDs: available.map((status) => status.id).join(','), accessedBy: 'Client',
+          },
+        })) as ApiService['get']);
+
+    const service = TestBed.inject(StatusesService);
+    const transitions = await service.loadForCr('cr-id');
+
+    expect(transitions).toEqual([
+      { id: 'rework-id', label: 'Rework Required' },
+      { id: 'accepted-id', label: 'Accepted (Test)' },
+    ]);
+    expect(service.getAvailableForCr('cr-id')).toEqual(transitions);
+  });
+
   it('rejects the old string-only transition contract instead of creating undefined actions', async () => {
     api.get.and.callFake(((path: string) => Promise.resolve(path.includes('/AvailableCRStatus/')
       ? { message: 'ok', data: ['accepted-id', 'rejected-id'] }
