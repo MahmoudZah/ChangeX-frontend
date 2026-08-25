@@ -1,11 +1,20 @@
 import { Component, Input } from '@angular/core';
+import { crStatusDefinition, CrStatusTone } from '@/shared/util/cr-status-workflow';
+
+const CR_TONE_CLASS: Record<CrStatusTone, { badge: string; dot: string }> = {
+  amber: { badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', dot: 'bg-amber-500 animate-pulse-subtle' },
+  orange: { badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', dot: 'bg-orange-500 animate-pulse-subtle' },
+  purple: { badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20', dot: 'bg-purple-500 animate-pulse-subtle' },
+  blue: { badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20', dot: 'bg-blue-500' },
+  indigo: { badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20', dot: 'bg-indigo-500' },
+  sky: { badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20', dot: 'bg-sky-500 animate-pulse-subtle' },
+  emerald: { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
+  teal: { badge: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20', dot: 'bg-teal-500' },
+  rose: { badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20', dot: 'bg-rose-500' },
+};
 
 const STATUS_CLASS: Record<string, { badge: string; dot: string }> = {
   'Pending Estimate': { badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', dot: 'bg-amber-500' },
-  'Pending Vendor FeedBack': { badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', dot: 'bg-amber-500 animate-pulse-subtle' },
-  'Pending Client Clarification': { badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', dot: 'bg-orange-500 animate-pulse-subtle' },
-  'Pending Client Approval': { badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20', dot: 'bg-purple-500 animate-pulse-subtle' },
-  'Pending Customer Approval': { badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20', dot: 'bg-purple-500 animate-pulse-subtle' },
   Pending: { badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', dot: 'bg-amber-500' },
   'Under Review': { badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20', dot: 'bg-indigo-500' },
   'Estimate Approval': { badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20', dot: 'bg-purple-500' },
@@ -13,9 +22,6 @@ const STATUS_CLASS: Record<string, { badge: string; dot: string }> = {
   Delayed: { badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20', dot: 'bg-rose-500' },
   'In Progress': { badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20', dot: 'bg-sky-500 animate-pulse-subtle' },
   Accepted: { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
-  'Accepted (CR)': { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
-  'Accepted (Estimation)': { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
-  'Accepted (Test)': { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
   Active: { badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-500' },
   Rework: { badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', dot: 'bg-orange-500' },
   Rejected: { badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20', dot: 'bg-rose-500' },
@@ -40,8 +46,11 @@ const STATUS_CLASS: Record<string, { badge: string; dot: string }> = {
 })
 export class StatusBadgeComponent {
   @Input({ required: true }) status = '';
+  @Input() statusId = '';
 
   get config(): { badge: string; dot: string } {
+    const tone = crStatusDefinition(this.statusId)?.tone;
+    if (tone) return CR_TONE_CLASS[tone];
     return STATUS_CLASS[this.status] ?? { badge: 'bg-muted text-muted-foreground border border-border', dot: 'bg-muted-foreground' };
   }
 }

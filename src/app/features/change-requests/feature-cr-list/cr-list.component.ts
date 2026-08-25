@@ -7,6 +7,7 @@ import { DataTableComponent } from '@/shared/ui/data-table/data-table.component'
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 import { PAGE_SIZE, PRIORITIES, STORAGE_KEYS } from '@/shared/util/constants';
+import { CR_BOARD_COLUMNS, crBoardColumn, crStatusLabel, crStatusOrder, normalizeStatusId } from '@/shared/util/cr-status-workflow';
 import { formatCurrency, formatDate } from '@/shared/util/formatters';
 
 export type CrListView = 'board' | 'list';
@@ -46,24 +47,37 @@ export class CrListComponent implements OnInit {
   readonly projects = computed(() => this.isAdmin()
     ? this.projectsService.projects()
     : this.projectsService.projects().filter((project) => project.clientId === this.auth.user()?.clientId));
-  readonly statuses = computed(() => [...new Set(this.crs().map((cr) => cr.status))].sort());
+  readonly statuses = computed(() => {
+    const byId = new Map<string, { id: string; label: string }>();
+    this.crs().forEach((cr) => byId.set(normalizeStatusId(cr.currentStatusID), {
+      id: cr.currentStatusID,
+      label: crStatusLabel(cr.currentStatusID, cr.status),
+    }));
+    return [...byId.values()].sort((left, right) =>
+      crStatusOrder(left.id) - crStatusOrder(right.id) || left.label.localeCompare(right.label));
+  });
   readonly filtered = computed(() => {
     const query = this.search().trim().toLowerCase();
     return this.crs().filter((cr) => {
       if (query && !`${cr.code} ${cr.title} ${cr.projectName}`.toLowerCase().includes(query)) return false;
       if (this.projectFilter() !== 'all' && cr.projectId !== this.projectFilter()) return false;
-      if (this.statusFilter() !== 'all' && cr.status !== this.statusFilter()) return false;
+      if (this.statusFilter() !== 'all' && normalizeStatusId(cr.currentStatusID) !== normalizeStatusId(this.statusFilter())) return false;
       return this.priorityFilter() === 'all' || cr.priority === this.priorityFilter();
     });
   });
   readonly paged = computed(() => this.filtered().slice((this.page() - 1) * PAGE_SIZE, this.page() * PAGE_SIZE));
   readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
-  readonly boardColumns = computed(() => [
-    { key: 'incoming', title: 'New & Estimating', color: '#65dcd5', items: this.filtered().filter((cr) => ['Estimating', 'Analysis'].includes(cr.stage)) },
-    { key: 'review', title: 'Review & Approval', color: '#f5a623', items: this.filtered().filter((cr) => ['Reviewing', 'Scheduled'].includes(cr.stage)) },
-    { key: 'progress', title: 'In Progress', color: '#6366f1', items: this.filtered().filter((cr) => ['Design Prep', 'Development', 'Testing'].includes(cr.stage)) },
-    { key: 'done', title: 'Delivered', color: '#22a06b', items: this.filtered().filter((cr) => ['Completed', 'Archived'].includes(cr.stage)) },
-  ]);
+  readonly boardColumns = computed(() => {
+    const items = this.filtered();
+    const columns = CR_BOARD_COLUMNS.map((column) => ({
+      ...column,
+      items: items.filter((cr) => crBoardColumn(cr.currentStatusID)?.key === column.key),
+    }));
+    const unknown = items.filter((cr) => !crBoardColumn(cr.currentStatusID));
+    return unknown.length
+      ? [...columns, { key: 'other', title: 'Other', color: '#71717a', items: unknown }]
+      : columns;
+  });
 
   async ngOnInit(): Promise<void> {
     this.projectFilter.set(this.route.snapshot.queryParamMap.get('projectId') ?? 'all');

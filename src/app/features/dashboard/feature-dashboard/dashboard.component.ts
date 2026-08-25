@@ -9,6 +9,7 @@ import { DataTableComponent } from '@/shared/ui/data-table/data-table.component'
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 import { formatCurrency, formatDate } from '@/shared/util/formatters';
+import { crBoardColumn, isApprovalStatusId, isTerminalStatusId } from '@/shared/util/cr-status-workflow';
 
 @Component({
   selector: 'app-dashboard',
@@ -36,7 +37,7 @@ export class DashboardComponent implements OnInit {
     () =>
       this.crs
         .crs()
-        .filter((cr) => !['rejected', 'completed', 'implemented'].some((state) => cr.status.toLowerCase().includes(state))),
+        .filter((cr) => !isTerminalStatusId(cr.currentStatusID)),
   );
 
   readonly userFirstName = computed(() => {
@@ -56,12 +57,12 @@ export class DashboardComponent implements OnInit {
       .crs()
       .filter((cr) => !search || `${cr.code} ${cr.title} ${cr.clientName} ${cr.projectName}`.toLowerCase().includes(search));
     if (tab === 'estimating') {
-      return list.filter((cr) => cr.stage.toLowerCase().includes('estimat') || cr.status.toLowerCase().includes('review'));
+      return list.filter((cr) => ['intake', 'estimation'].includes(crBoardColumn(cr.currentStatusID)?.key ?? ''));
     }
     if (tab === 'signoff') {
-      return list.filter((cr) => cr.status.toLowerCase().includes('approval') || cr.status.toLowerCase().includes('test'));
+      return list.filter((cr) => isApprovalStatusId(cr.currentStatusID));
     }
-    if (tab === 'delayed') return list.filter((cr) => cr.status.toLowerCase().includes('delayed') || cr.daysOpen > 14);
+    if (tab === 'delayed') return list.filter((cr) => cr.daysOpen > 14);
     return list;
   });
 

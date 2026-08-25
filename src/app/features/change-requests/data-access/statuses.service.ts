@@ -2,11 +2,11 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ApiEnvelope, apiErrorMessage } from '@/core/http/api-contract';
 import { ApiService } from '@/core/http/api.service';
 import { Role } from '@/shared/util/constants';
+import { normalizeStatusId, parseAvailableStatusIds } from '@/shared/util/cr-status-workflow';
 import {
   AvailableStatusDto,
   CRStatus,
   CRStatusDto,
-  isVisibleStatusTransition,
   StatusTransition,
 } from '@/features/change-requests/data-access/status.model';
 
@@ -22,7 +22,7 @@ export class StatusesService {
   readonly error = this._error.asReadonly();
 
   async loadCurrentForCrs(crIds: string[]): Promise<void> {
-    const ids = [...new Set(crIds.filter(Boolean))];
+    const ids = [...new Set(crIds.filter(Boolean))].filter((id) => !this.getCurrentForCr(id));
     if (!ids.length) return;
 
     this._loading.set(true);
@@ -61,9 +61,14 @@ export class StatusesService {
       if (!availableResponse.data.every((status) => this.isAvailableStatusDto(status))) {
         throw new Error('The API returned an invalid available-status response.');
       }
+      const allowedIds = parseAvailableStatusIds(current.availableStatusIDs);
+      const orderById = new Map(allowedIds.map((id, index) => [id, index]));
       const transitions = availableResponse.data
         .map((status) => ({ id: status.id, label: status.currentStatus }))
-        .filter((transition) => isVisibleStatusTransition(current.currentStatus, transition));
+        .filter((transition) => orderById.has(normalizeStatusId(transition.id)))
+        .sort((left, right) =>
+          (orderById.get(normalizeStatusId(left.id)) ?? Number.MAX_SAFE_INTEGER) -
+          (orderById.get(normalizeStatusId(right.id)) ?? Number.MAX_SAFE_INTEGER));
       this._currentByCr.update((map) => ({ ...map, [crId]: current }));
       this._availableByCr.update((map) => ({ ...map, [crId]: transitions }));
       return transitions;
@@ -86,7 +91,14 @@ export class StatusesService {
 
   canAct(crId: string, role: Role | undefined): boolean {
     const accessedBy = this.getCurrentForCr(crId)?.accessedBy.toLowerCase();
-    return accessedBy === 'admin' ? role === 'Admin' : accessedBy === 'client' && role !== 'Admin';
+    return accessedBy === 'admin'
+      ? role === 'Admin'
+      : accessedBy === 'client' && (role === 'User' || role === 'UserAdmin');
+  }
+
+  canTransition(crId: string, targetStatusId: string, role: Role | undefined): boolean {
+    return this.canAct(crId, role) && this.getAvailableForCr(crId)
+      .some((transition) => normalizeStatusId(transition.id) === normalizeStatusId(targetStatusId));
   }
 
   private isAvailableStatusDto(value: unknown): value is AvailableStatusDto {

@@ -4,6 +4,7 @@ import { ApiService } from '@/core/http/api.service';
 import { CRResponseDto } from '@/features/change-requests/data-access/cr.model';
 import { CrsService } from '@/features/change-requests/data-access/crs.service';
 import { StatusesService } from '@/features/change-requests/data-access/statuses.service';
+import { CR_STATUS_IDS } from '@/shared/util/cr-status-workflow';
 
 describe('CrsService', () => {
   const crId = '11111111-1111-1111-1111-111111111111';
@@ -26,10 +27,11 @@ describe('CrsService', () => {
     admin = false;
     api = jasmine.createSpyObj<ApiService>('ApiService', ['get', 'post', 'put', 'delete']);
     statuses = jasmine.createSpyObj<StatusesService>('StatusesService', [
-      'loadCurrentForCrs', 'loadForCr', 'getCurrentForCr',
+      'loadCurrentForCrs', 'loadForCr', 'getCurrentForCr', 'canTransition',
     ]);
     statuses.loadCurrentForCrs.and.resolveTo();
     statuses.loadForCr.and.resolveTo([]);
+    statuses.canTransition.and.returnValue(true);
     statuses.getCurrentForCr.and.returnValue({
       id: '44444444-4444-4444-4444-444444444444',
       currentStatus: 'Pending Client Clarification',
@@ -96,7 +98,7 @@ describe('CrsService', () => {
 
     expect(result?.id).toBe(crId);
     expect(api.get.calls.allArgs().map((args) => args[0])).toEqual(['/CR/GetAllCRs']);
-    expect(statuses.loadForCr).toHaveBeenCalledOnceWith(crId, true);
+    expect(statuses.loadForCr).toHaveBeenCalledOnceWith(crId, false);
   });
 
   it('returns not found for a regular user when the ID is absent from the client-scoped collection', async () => {
@@ -117,6 +119,48 @@ describe('CrsService', () => {
     expect(result?.id).toBe(crId);
     expect(api.get).toHaveBeenCalledOnceWith(`/CR/GetCR/${crId}`);
     expect(statuses.loadForCr).toHaveBeenCalledOnceWith(crId, true);
+  });
+
+  it('sends the exact target status ID and refreshes the persisted CR after a valid transition', async () => {
+    admin = true;
+    const targetId = CR_STATUS_IDS.acceptedCr;
+    api.put.and.resolveTo({ message: 'changed', data: { ...rawCr(), currentStatusID: targetId } });
+    api.get.and.resolveTo({
+      message: 'ok',
+      data: { ...rawCr(), currentStatusID: targetId, currentStatusName: 'Accepted (CR)' },
+    });
+
+    const service = TestBed.inject(CrsService);
+    const updated = await service.changeStatus(crId, targetId);
+
+    expect(api.put).toHaveBeenCalledOnceWith('/CR/ChangeStatus', null, { ID: targetId, CRID: crId });
+    expect(api.get).toHaveBeenCalledOnceWith(`/CR/GetCR/${crId}`);
+    expect(statuses.loadForCr).toHaveBeenCalledOnceWith(crId, true);
+    expect(updated.currentStatusID).toBe(targetId);
+    expect(service.crs().find((cr) => cr.id === crId)?.currentStatusID).toBe(targetId);
+  });
+
+  it('refuses a stale or role-disallowed transition before sending a mutation', async () => {
+    statuses.canTransition.and.returnValue(false);
+    const service = TestBed.inject(CrsService);
+
+    await expectAsync(service.changeStatus(crId, CR_STATUS_IDS.rejected))
+      .toBeRejectedWithError(/no longer available for your role/i);
+
+    expect(statuses.loadForCr).toHaveBeenCalledOnceWith(crId, true);
+    expect(api.put).not.toHaveBeenCalled();
+  });
+
+  it('keeps the cached status unchanged when the backend transition fails', async () => {
+    api.get.and.resolveTo({ message: 'ok', data: [rawCr()] });
+    const service = TestBed.inject(CrsService);
+    await service.loadAll();
+    api.put.and.rejectWith(new Error('conflict'));
+
+    await expectAsync(service.changeStatus(crId, CR_STATUS_IDS.acceptedCr)).toBeRejected();
+
+    expect(service.crs()[0].currentStatusID).toBe(rawCr().currentStatusID);
+    expect(service.loading()).toBeFalse();
   });
 
   function rawCr(): CRResponseDto {

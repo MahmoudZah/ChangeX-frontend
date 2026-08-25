@@ -60,7 +60,7 @@ describe('StatusesService', () => {
     expect(service.error()).toContain('Cannot connect');
   });
 
-  it('hides Rejected only while the CR is pending customer approval', async () => {
+  it('uses the current status ID list as authority and preserves its transition order', async () => {
     const available = [
       { id: 'rework-id', currentStatus: 'Rework Required' },
       { id: 'rejected-id', currentStatus: 'Rejected' },
@@ -72,7 +72,7 @@ describe('StatusesService', () => {
           message: 'ok',
           data: {
             id: 'current-id', currentStatus: 'Pending Customer Approval',
-            availableStatusIDs: available.map((status) => status.id).join(','), accessedBy: 'Client',
+            availableStatusIDs: 'accepted-id,rework-id', accessedBy: 'Client',
           },
         })) as ApiService['get']);
 
@@ -80,10 +80,14 @@ describe('StatusesService', () => {
     const transitions = await service.loadForCr('cr-id');
 
     expect(transitions).toEqual([
-      { id: 'rework-id', label: 'Rework Required' },
       { id: 'accepted-id', label: 'Accepted (Test)' },
+      { id: 'rework-id', label: 'Rework Required' },
     ]);
     expect(service.getAvailableForCr('cr-id')).toEqual(transitions);
+    expect(service.canTransition('cr-id', 'accepted-id', 'User')).toBeTrue();
+    expect(service.canTransition('cr-id', 'rejected-id', 'User')).toBeFalse();
+    expect(service.canTransition('cr-id', 'accepted-id', 'Admin')).toBeFalse();
+    expect(service.canTransition('cr-id', 'accepted-id', undefined)).toBeFalse();
   });
 
   it('rejects the old string-only transition contract instead of creating undefined actions', async () => {

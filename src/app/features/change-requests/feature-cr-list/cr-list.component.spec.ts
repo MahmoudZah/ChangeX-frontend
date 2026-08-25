@@ -10,6 +10,7 @@ import {
 } from '@/features/change-requests/feature-cr-list/cr-list.component';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
 import { PAGE_SIZE, STORAGE_KEYS } from '@/shared/util/constants';
+import { CR_STATUS_IDS } from '@/shared/util/cr-status-workflow';
 
 describe('CrListComponent views', () => {
   let fixture: ComponentFixture<CrListComponent>;
@@ -163,7 +164,7 @@ describe('CrListComponent views', () => {
   it('shows empty and no-results states in both views', () => {
     crs.set([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('[aria-label="Change Request board"] section')).toHaveSize(4);
+    expect(fixture.nativeElement.querySelectorAll('[aria-label="Change Request board"] section')).toHaveSize(5);
     expect(fixture.nativeElement.textContent).toContain('No requests here');
 
     component.setView('list');
@@ -202,6 +203,42 @@ describe('CrListComponent views', () => {
     expect(Number(emptyCell?.colSpan)).toBe(CR_TABLE_COLUMNS.length);
   });
 
+  it('groups statuses by backend ID without losing, duplicating, or hiding an unknown status', () => {
+    crs.set([
+      changeRequest({ id: 'analysis', title: 'Analysis CR', currentStatusID: CR_STATUS_IDS.analysis, status: 'Analysis' }),
+      changeRequest({ id: 'signoff', title: 'Signoff CR', currentStatusID: CR_STATUS_IDS.pendingCustomerApproval, status: 'Pending Customer Approval' }),
+      changeRequest({ id: 'closed', title: 'Delivered CR', currentStatusID: CR_STATUS_IDS.delivered, status: 'Delivered' }),
+      changeRequest({ id: 'future', title: 'Future CR', currentStatusID: 'future-status-id', status: 'Future Backend State' }),
+    ]);
+    fixture.detectChanges();
+
+    const groupedIds = component.boardColumns().flatMap((column) => column.items.map((cr) => cr.id));
+    expect(groupedIds).toEqual(['analysis', 'signoff', 'closed', 'future']);
+    expect(new Set(groupedIds).size).toBe(crs().length);
+    expect(component.boardColumns().find((column) => column.key === 'other')?.items[0].status)
+      .toBe('Future Backend State');
+  });
+
+  it('builds ordered filter options and filters List and Board by status ID', () => {
+    crs.set([
+      changeRequest({ id: 'approval', title: 'Approval CR', currentStatusID: CR_STATUS_IDS.pendingCustomerApproval, status: 'Pending Customer Approval' }),
+      changeRequest({ id: 'analysis', title: 'Analysis CR', currentStatusID: CR_STATUS_IDS.analysis, status: 'Analysis' }),
+    ]);
+    component.statusFilter.set(CR_STATUS_IDS.analysis.toUpperCase());
+    fixture.detectChanges();
+
+    expect(component.statuses().map((status) => status.id)).toEqual([
+      CR_STATUS_IDS.analysis,
+      CR_STATUS_IDS.pendingCustomerApproval,
+    ]);
+    expect(component.filtered().map((cr) => cr.id)).toEqual(['analysis']);
+    expect(component.boardColumns().flatMap((column) => column.items).map((cr) => cr.id)).toEqual(['analysis']);
+    component.setView('list');
+    fixture.detectChanges();
+    expect(tableElement()?.textContent).toContain('Analysis CR');
+    expect(tableElement()?.textContent).not.toContain('Approval CR');
+  });
+
   async function createComponent(): Promise<void> {
     fixture = TestBed.createComponent(CrListComponent);
     component = fixture.componentInstance;
@@ -231,8 +268,8 @@ function changeRequest(overrides: Partial<ChangeRequest> = {}): ChangeRequest {
     priority: 'High', scope: ['Scope'], description: 'Description', estimatedManHour: 8,
     estimatedHours: 8, hourlyRate: 50, manHourRate: 50, totalCost: 400, estimatedCost: 400,
     startDate: '2026-09-10', finishDate: '2026-09-11', expectedStart: '2026-09-10',
-    expectedDelivery: '2026-09-11', currentStatusID: 'status-id', currentStatusName: 'Analysis',
-    status: 'Analysis', stage: 'Analysis', projectID: 'project-id', projectId: 'project-id',
+    expectedDelivery: '2026-09-11', currentStatusID: CR_STATUS_IDS.analysis, currentStatusName: 'Analysis',
+    status: 'Analysis', stage: 'Implementation', projectID: 'project-id', projectId: 'project-id',
     projectName: 'A project with a long name', clientId: 'client-id', clientName: 'Sensitive admin client',
     daysOpen: 1,
     ...overrides,

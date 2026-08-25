@@ -5,7 +5,7 @@ import { apiErrorMessage } from '@/core/http/api-contract';
 import { ChangeRequest } from '@/features/change-requests/data-access/cr.model';
 import { CrsService } from '@/features/change-requests/data-access/crs.service';
 import { DetailsService } from '@/features/change-requests/data-access/details.service';
-import { isReworkTransition, StatusTransition } from '@/features/change-requests/data-access/status.model';
+import { StatusTransition } from '@/features/change-requests/data-access/status.model';
 import { StatusesService } from '@/features/change-requests/data-access/statuses.service';
 import { CrAttachmentsCommentsTabComponent } from '@/features/change-requests/feature-cr-detail/tabs/attachments-comments/attachments-comments.component';
 import { EstimationComponent } from '@/features/change-requests/feature-cr-detail/tabs/estimation/estimation.component';
@@ -16,6 +16,7 @@ import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badg
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
 import { StepItem, StepperComponent } from '@/shared/ui/stepper/stepper.component';
 import { formatDate } from '@/shared/util/formatters';
+import { CR_STATUS_IDS, crTransitionKind, crWorkflowPhaseIndex, normalizeStatusId } from '@/shared/util/cr-status-workflow';
 
 type Tab = 'overview' | 'estimate' | 'timeline' | 'comments';
 
@@ -59,31 +60,15 @@ export class CrDetailComponent implements OnInit {
   readonly canAct = computed(() => this.statuses.canAct(this.cr()?.id ?? '', this.auth.user()?.role));
 
   readonly primaryTransitions = computed(() => {
-    return this.transitions().filter(
-      (t) => !isReworkTransition(t) && !t.label.toLowerCase().includes('clarification') && !t.label.toLowerCase().includes('reject'),
-    );
+    return this.transitions().filter((transition) => crTransitionKind(transition.id) === 'primary');
   });
 
   readonly secondaryTransitions = computed(() => {
-    return this.transitions().filter(
-      (t) => isReworkTransition(t) || t.label.toLowerCase().includes('clarification') || t.label.toLowerCase().includes('reject'),
-    );
+    return this.transitions().filter((transition) => crTransitionKind(transition.id) !== 'primary');
   });
 
   readonly lifecycleSteps = computed<StepItem[]>(() => {
-    const status = this.cr()?.status.toLowerCase() ?? '';
-    let activeIndex: number;
-    if (status.includes('deliver') || status.includes('complete') || status.includes('implement')) {
-      activeIndex = 4;
-    } else if (status.includes('progress') || status.includes('develop') || status.includes('test')) {
-      activeIndex = 3;
-    } else if (status.includes('approval') || status.includes('clarification') || status.includes('customer') || status.includes('client')) {
-      activeIndex = 2;
-    } else if (status.includes('accepted') || status.includes('estimat')) {
-      activeIndex = 1;
-    } else {
-      activeIndex = 0;
-    }
+    const activeIndex = crWorkflowPhaseIndex(this.cr()?.currentStatusID);
 
     return [
       { label: 'Submitted', description: 'Request created', done: activeIndex > 0, current: activeIndex === 0 },
@@ -98,6 +83,7 @@ export class CrDetailComponent implements OnInit {
     const item = this.cr();
     if (!item) return null;
     const current = this.statuses.getCurrentForCr(item.id);
+    if (!current) return null;
     const accessedBy = current?.accessedBy.toLowerCase();
     const isUserTurn = this.canAct();
 
@@ -124,10 +110,10 @@ export class CrDetailComponent implements OnInit {
 
   readonly canEditEstimate = computed(() => {
     const item = this.cr();
-    const currentStatus = this.statuses.getCurrentForCr(item?.id ?? '')?.currentStatus.toLowerCase() ?? '';
+    const currentStatusId = this.statuses.getCurrentForCr(item?.id ?? '')?.id;
     return this.isAdmin() && this.canAct() && !!item &&
       !this.hasCompleteEstimate(item) &&
-      currentStatus.includes('accepted') && currentStatus.includes('cr');
+      normalizeStatusId(currentStatusId) === CR_STATUS_IDS.acceptedCr;
   });
   readonly attachmentCount = computed(() => this.details.detailsFor(this.cr()?.id ?? '').length);
 
@@ -141,13 +127,13 @@ export class CrDetailComponent implements OnInit {
       else this.cr.set(item);
       if (item && !this.forbidden()) {
         await this.details.loadFor(id);
-        if (this.statuses.getCurrentForCr(id)?.currentStatus.toLowerCase().includes('clarification')) {
+        if (normalizeStatusId(this.statuses.getCurrentForCr(id)?.id) === CR_STATUS_IDS.pendingClientClarification) {
           this.tab.set('comments');
         } else if (this.canEditEstimate()) {
           this.tab.set('estimate');
         }
         if (((window.history.state ?? {}) as { openRework?: boolean }).openRework) {
-          const target = this.transitions().find(isReworkTransition);
+          const target = this.transitions().find((transition) => crTransitionKind(transition.id) === 'rework');
           if (target) this.reworkTarget.set(target);
         }
       }
@@ -159,7 +145,7 @@ export class CrDetailComponent implements OnInit {
     const item = this.cr();
     if (!item || this.busy() || !this.canAct()) return;
     if (this.blockIncompleteEstimate()) return;
-    if (isReworkTransition(target)) {
+    if (crTransitionKind(target.id) === 'rework') {
       this.error.set('');
       this.notice.set('');
       this.reworkTarget.set(target);
@@ -238,17 +224,16 @@ export class CrDetailComponent implements OnInit {
     const updated = await this.crs.changeStatus(item.id, target.id);
     this.cr.set(updated);
     this.notice.set(this.crs.lastMessage() || `Status changed to ${target.label}.`);
-    if (target.label.toLowerCase().includes('clarification')) {
+    if (crTransitionKind(target.id) === 'clarification') {
       this.tab.set('comments');
       this.notice.set('Clarification requested. Add the message and required attachment below for the client.');
       return;
     }
 
     const currentStatus = this.statuses.getCurrentForCr(item.id);
-    const statusName = currentStatus?.currentStatus.toLowerCase() ?? '';
     if (currentStatus?.accessedBy.toLowerCase() === 'admin' &&
         !this.hasCompleteEstimate(updated) &&
-        statusName.includes('accepted') && statusName.includes('cr')) {
+        normalizeStatusId(currentStatus.id) === CR_STATUS_IDS.acceptedCr) {
       this.tab.set('estimate');
       this.notice.set(`Status changed to ${target.label}. Complete the estimate below.`);
     }

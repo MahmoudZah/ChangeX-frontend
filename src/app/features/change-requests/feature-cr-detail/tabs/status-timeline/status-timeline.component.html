@@ -5,11 +5,11 @@
       <div>
         <div class="flex items-center gap-2">
           <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Current Stage</span>
-          <app-status-badge [status]="status" />
+          <app-status-badge [status]="status()" [statusId]="statusId()" />
         </div>
-        <h2 class="mt-2 text-xl font-bold tracking-tight text-foreground">{{ status }}</h2>
+        <h2 class="mt-2 text-xl font-bold tracking-tight text-foreground">{{ status() }}</h2>
         <p class="mt-1 text-xs text-muted-foreground">
-          Assigned to: <strong class="text-foreground">{{ accessedBy || 'Workspace Role' }}</strong> · Following standard ChangeX SLA protocol
+          Assigned to: <strong class="text-foreground">{{ accessedBy() || 'Workspace Role' }}</strong> · Following standard ChangeX SLA protocol
         </p>
       </div>
       <div class="rounded-xl border border-border bg-card/80 p-3.5 text-xs text-muted-foreground backdrop-blur-sm">

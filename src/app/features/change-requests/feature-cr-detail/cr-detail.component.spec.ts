@@ -8,9 +8,10 @@ import { DetailsService } from '@/features/change-requests/data-access/details.s
 import { StatusTransition } from '@/features/change-requests/data-access/status.model';
 import { StatusesService } from '@/features/change-requests/data-access/statuses.service';
 import { CrDetailComponent } from '@/features/change-requests/feature-cr-detail/cr-detail.component';
+import { CR_STATUS_IDS } from '@/shared/util/cr-status-workflow';
 
 describe('CrDetailComponent estimation navigation', () => {
-  const nextStatus: StatusTransition = { id: 'next-status-id', label: 'Pending Client Approval' };
+  const nextStatus: StatusTransition = { id: CR_STATUS_IDS.estimationCreated, label: 'Estimation Created' };
   let fixture: ComponentFixture<CrDetailComponent>;
   let component: CrDetailComponent;
   let crs: jasmine.SpyObj<CrsService>;
@@ -33,7 +34,7 @@ describe('CrDetailComponent estimation navigation', () => {
     ], { error: signal('') });
     statuses.getAvailableForCr.and.returnValue([nextStatus]);
     statuses.getCurrentForCr.and.returnValue({
-      id: 'accepted-status-id', currentStatus: 'Accepted (CR)', availableStatusIDs: nextStatus.id,
+      id: CR_STATUS_IDS.acceptedCr, currentStatus: 'Accepted (CR)', availableStatusIDs: nextStatus.id,
       accessedBy: 'Admin',
     });
     statuses.canAct.and.returnValue(true);
@@ -85,7 +86,7 @@ describe('CrDetailComponent estimation navigation', () => {
   });
 
   it('saves Rework context before changing to the Rework status', async () => {
-    const rework = { id: 'rework-id', label: 'Rework Required' };
+    const rework = { id: CR_STATUS_IDS.reworkRequired, label: 'Rework Required' };
     const file = new File(['support'], 'support.png', { type: 'image/png' });
     const sequence: string[] = [];
     details.createReworkContext.and.callFake(async () => {
@@ -105,7 +106,7 @@ describe('CrDetailComponent estimation navigation', () => {
     await component.submitRework({ message: 'Please revise this.', files: [file] });
 
     expect(details.createReworkContext).toHaveBeenCalledOnceWith('cr-id', 'Please revise this.', [file]);
-    expect(crs.changeStatus).toHaveBeenCalledOnceWith('cr-id', 'rework-id');
+    expect(crs.changeStatus).toHaveBeenCalledOnceWith('cr-id', CR_STATUS_IDS.reworkRequired);
     expect(sequence).toEqual(['context', 'status']);
   });
 });
@@ -115,8 +116,8 @@ function changeRequest(overrides: Partial<ChangeRequest> = {}): ChangeRequest {
     id: 'cr-id', name: 'CR', title: 'CR', code: 'CR-1', priority: 'High', scope: ['Scope'],
     description: 'Description', estimatedManHour: 0, estimatedHours: 0, hourlyRate: 0,
     manHourRate: 0, totalCost: 0, estimatedCost: 0, startDate: '', finishDate: '',
-    expectedStart: '', expectedDelivery: '', currentStatusID: 'accepted-status-id',
-    currentStatusName: 'Accepted (CR)', status: 'Accepted (CR)', stage: 'Scheduled',
+    expectedStart: '', expectedDelivery: '', currentStatusID: CR_STATUS_IDS.acceptedCr,
+    currentStatusName: 'Accepted (CR)', status: 'Accepted (CR)', stage: 'Estimation & Approval',
     projectID: 'project-id', projectId: 'project-id', projectName: 'Project', clientId: '',
     clientName: '', daysOpen: 0, ...overrides,
   };

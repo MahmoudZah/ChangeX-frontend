@@ -4,6 +4,7 @@ import { ApiEnvelope, ApiMessage, apiErrorMessage } from '@/core/http/api-contra
 import { ApiService } from '@/core/http/api.service';
 import { ChangeRequest, CreateCRDto, CRResponseDto, EstimateCRDto } from '@/features/change-requests/data-access/cr.model';
 import { StatusesService } from '@/features/change-requests/data-access/statuses.service';
+import { crStageLabel, isApprovalStatusId, normalizeStatusId } from '@/shared/util/cr-status-workflow';
 
 @Injectable({ providedIn: 'root' })
 export class CrsService {
@@ -20,7 +21,7 @@ export class CrsService {
   readonly error = this._error.asReadonly();
   readonly lastMessage = this._lastMessage.asReadonly();
   readonly pendingApprovals = computed(() =>
-    this._crs().filter((cr) => cr.currentStatusName.toLowerCase().includes('approval')),
+    this._crs().filter((cr) => isApprovalStatusId(cr.currentStatusID)),
   );
 
   async loadAll(projectId?: string, statusId?: string, name?: string): Promise<ChangeRequest[]> {
@@ -43,7 +44,7 @@ export class CrsService {
         if (item.currentStatusName !== 'Status unavailable') return item;
         const statusName = this.statuses.getCurrentForCr(item.id)?.currentStatus;
         return statusName
-          ? { ...item, currentStatusName: statusName, status: statusName, stage: this.stageFromStatus(statusName) }
+          ? { ...item, currentStatusName: statusName, status: statusName, stage: crStageLabel(item.currentStatusID) }
           : item;
       });
       this._crs.set(hydratedCrs);
@@ -57,7 +58,7 @@ export class CrsService {
     }
   }
 
-  async getById(id: string): Promise<ChangeRequest | null> {
+  async getById(id: string, refreshWorkflow = false): Promise<ChangeRequest | null> {
     this._error.set('');
     try {
       if (!this.auth.isAdmin()) {
@@ -65,9 +66,10 @@ export class CrsService {
         if (this._error()) throw new Error(this._error());
         const scopedCr = scopedCrs.find((item) => item.id === id) ?? null;
         if (!scopedCr) return null;
-        await this.statuses.loadForCr(id, true);
+        await this.statuses.loadForCr(id, refreshWorkflow);
         const currentStatusName = this.statuses.getCurrentForCr(id)?.currentStatus || scopedCr.currentStatusName;
-        const authorizedCr = { ...scopedCr, currentStatusName, status: currentStatusName, stage: this.stageFromStatus(currentStatusName) };
+        const currentStatusID = this.statuses.getCurrentForCr(id)?.id || scopedCr.currentStatusID;
+        const authorizedCr = { ...scopedCr, currentStatusID, currentStatusName, status: currentStatusName, stage: crStageLabel(currentStatusID) };
         this._crs.update((current) => [...current.filter((item) => item.id !== id), authorizedCr]);
         return authorizedCr;
       }
@@ -124,12 +126,18 @@ export class CrsService {
     this._loading.set(true);
     this._lastMessage.set('');
     try {
+      if (!this.statuses.canTransition(crId, newStatusId, this.auth.user()?.role)) {
+        await this.statuses.loadForCr(crId, true);
+      }
+      if (!this.statuses.canTransition(crId, newStatusId, this.auth.user()?.role)) {
+        throw new Error('This status transition is no longer available for your role. Refresh the request and try again.');
+      }
       const response = await this.api.put<ApiEnvelope<CRResponseDto>>('/CR/ChangeStatus', null, {
         ID: newStatusId,
         CRID: crId,
       });
-      const persisted = await this.getById(crId);
-      if (!persisted || persisted.currentStatusID.toLowerCase() !== newStatusId.toLowerCase()) {
+      const persisted = await this.getById(crId, true);
+      if (!persisted || normalizeStatusId(persisted.currentStatusID) !== normalizeStatusId(newStatusId)) {
         throw new Error('The API accepted the status change but did not persist it.');
       }
       this._lastMessage.set(response.message);
@@ -173,7 +181,7 @@ export class CrsService {
       currentStatusID: raw.currentStatusID,
       currentStatusName: statusName,
       status: statusName,
-      stage: this.stageFromStatus(statusName),
+      stage: crStageLabel(raw.currentStatusID),
       projectID: raw.projectID,
       projectId: raw.projectID,
       projectName: raw.projectName || raw.project?.name || '',
@@ -181,19 +189,6 @@ export class CrsService {
       clientName: this.auth.isAdmin() ? '' : this.auth.user()?.company ?? '',
       daysOpen,
     };
-  }
-
-  private stageFromStatus(status: string): string {
-    const normalized = status.toLowerCase();
-    if (normalized.includes('reject')) return 'Archived';
-    if (normalized.includes('complete') || normalized.includes('deliver')) return 'Completed';
-    if (normalized.includes('accept')) return 'Scheduled';
-    if (normalized.includes('approval')) return 'Reviewing';
-    if (normalized.includes('analysis')) return 'Analysis';
-    if (normalized.includes('design')) return 'Design Prep';
-    if (normalized.includes('develop')) return 'Development';
-    if (normalized.includes('test')) return 'Testing';
-    return 'Estimating';
   }
 
   private usableDate(value: string): string {

@@ -130,7 +130,7 @@
               <td class="px-2 py-3 font-medium text-foreground">{{ cr.clientName || '—' }}</td>
               <td class="px-2 py-3 text-muted-foreground">{{ cr.projectName }}</td>
               <td class="px-2 py-3"><app-priority-badge [priority]="cr.priority" /></td>
-              <td class="px-2 py-3"><app-status-badge [status]="cr.status" /></td>
+              <td class="px-2 py-3"><app-status-badge [status]="cr.status" [statusId]="cr.currentStatusID" /></td>
               <td class="px-2 py-3 font-semibold text-foreground">{{ cr.stage }}</td>
               <td class="py-3 pl-2 text-right font-bold text-muted-foreground">{{ cr.daysOpen }}d</td>
             </tr>
@@ -220,7 +220,7 @@
                 </a>
               </td>
               <td class="px-3 py-3.5 text-muted-foreground">{{ cr.projectName }}</td>
-              <td class="px-3 py-3.5"><app-status-badge [status]="cr.status" /></td>
+              <td class="px-3 py-3.5"><app-status-badge [status]="cr.status" [statusId]="cr.currentStatusID" /></td>
               <td class="px-3 py-3.5"><app-priority-badge [priority]="cr.priority" /></td>
               <td class="py-3.5 pl-3 text-right font-medium text-muted-foreground">{{ formatDate(cr.finishDate) }}</td>
             </tr>

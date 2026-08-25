@@ -29,7 +29,7 @@
         <div class="min-w-0 flex-1">
           <div class="mb-2.5 flex flex-wrap items-center gap-2.5">
             <span class="rounded-md bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-bold text-primary">{{ item.code }}</span>
-            <app-status-badge [status]="item.status" />
+            <app-status-badge [status]="item.status" [statusId]="item.currentStatusID" />
             <app-priority-badge [priority]="item.priority" />
           </div>
           <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{{ item.title }}</h1>
@@ -174,6 +174,7 @@
       @case ('timeline') {
         <app-cr-status-timeline-tab
           [status]="item.status"
+          [statusId]="item.currentStatusID"
           [accessedBy]="statuses.getCurrentForCr(item.id)?.accessedBy || ''"
         />
       }
