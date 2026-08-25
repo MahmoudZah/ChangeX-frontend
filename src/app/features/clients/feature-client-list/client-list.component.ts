@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '@/core/http/api-contract';
 import { ClientsService } from '@/features/clients/data-access/clients.service';
 import { ProjectsService } from '@/features/projects/data-access/projects.service';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 
 @Component({
   selector: 'app-client-list',
@@ -13,6 +14,7 @@ import { ProjectsService } from '@/features/projects/data-access/projects.servic
 export class ClientListComponent implements OnInit {
   private clientsService = inject(ClientsService);
   private projectsService = inject(ProjectsService);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly clients = this.clientsService.clients;
   readonly loading = this.clientsService.loading;
   readonly apiError = this.clientsService.error;
@@ -50,7 +52,16 @@ export class ClientListComponent implements OnInit {
   }
 
   async deleteClient(id: string, name: string): Promise<void> {
-    if (this.deletingId() || !window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    if (this.deletingId()) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete Client',
+      message: `Delete "${name}"? This action cannot be undone and will permanently remove this client account.`,
+      confirmText: 'Delete Client',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.deletingId.set(id);
     this.actionError.set('');
     try {

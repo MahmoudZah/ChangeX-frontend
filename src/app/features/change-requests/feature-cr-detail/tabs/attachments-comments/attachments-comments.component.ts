@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { apiErrorMessage } from '@/core/http/api-contract';
 import { CrDetail } from '@/features/change-requests/data-access/detail.model';
 import { DetailsService } from '@/features/change-requests/data-access/details.service';
+import { ConfirmDialogService } from '@/shared/ui/alert-dialog/confirm-dialog.service';
 import { formatDate } from '@/shared/util/formatters';
 
 const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'];
@@ -11,6 +12,7 @@ const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 
 export class CrAttachmentsCommentsTabComponent implements OnInit {
   @Input({ required: true }) crId = '';
   private service = inject(DetailsService);
+  private confirmDialog = inject(ConfirmDialogService);
   readonly formatDate = formatDate;
   readonly loading = this.service.loading;
   readonly loadError = this.service.error;
@@ -53,7 +55,17 @@ export class CrAttachmentsCommentsTabComponent implements OnInit {
   }
 
   async deleteRecord(record: CrDetail): Promise<void> {
-    if (this.busy() || !window.confirm(`Delete this ${record.fileName ? 'attachment and message' : 'message'}?`)) return;
+    if (this.busy()) return;
+    const label = record.fileName ? 'attachment and message' : 'message';
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete Message',
+      message: `Delete this ${label}? This cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     this.busy.set(true); this.error.set('');
     try { this.notice.set(await this.service.delete(record.id)); }
     catch (error) { this.error.set(apiErrorMessage(error, 'The detail record could not be deleted.')); }
