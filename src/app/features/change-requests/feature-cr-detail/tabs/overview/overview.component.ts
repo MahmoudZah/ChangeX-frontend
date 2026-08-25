@@ -1,4 +1,4 @@
-﻿import { Component, Input } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { ChangeRequest } from '@/features/change-requests/data-access/cr.model';
 import { formatCurrency, formatDate } from '@/shared/util/formatters';
 
@@ -9,6 +9,9 @@ import { formatCurrency, formatDate } from '@/shared/util/formatters';
 })
 export class CrOverviewTabComponent {
   @Input({ required: true }) cr!: ChangeRequest;
+
   readonly formatCurrency = formatCurrency;
   readonly formatDate = formatDate;
 }
+
+

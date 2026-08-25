@@ -1,1 +1,87 @@
-<section class="rounded-2xl border border-border bg-card p-6 shadow-sm"><h2 class="text-lg font-semibold">Current Workflow Stage</h2><div class="mt-5 flex items-center gap-4"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">1</span><div><p class="font-bold">{{ status }}</p><p class="mt-1 text-xs text-muted-foreground">Action owner: {{ accessedBy || 'Not exposed' }}</p></div></div><p class="mt-6 rounded-lg bg-muted/40 px-4 py-3 text-sm text-muted-foreground">The backend exposes the current state and available transitions, but it does not expose status history timestamps or actors. No synthetic timeline entries are shown.</p></section>
+<div class="space-y-6">
+  <!-- Active Stage Highlight Spotlight -->
+  <section class="rounded-2xl border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-6 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Current Stage</span>
+          <app-status-badge [status]="status" />
+        </div>
+        <h2 class="mt-2 text-xl font-bold tracking-tight text-foreground">{{ status }}</h2>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Assigned to: <strong class="text-foreground">{{ accessedBy || 'Workspace Role' }}</strong> · Following standard ChangeX SLA protocol
+        </p>
+      </div>
+      <div class="rounded-xl border border-border bg-card/80 p-3.5 text-xs text-muted-foreground backdrop-blur-sm">
+        <p class="font-semibold text-foreground">Stage Deliverable Status</p>
+        <p class="mt-1">Active lifecycle position: Phase {{ currentStageIndex() + 1 }} of 5</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Complete 5-Phase CR Journey Map -->
+  <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h3 class="text-base font-bold text-foreground">Change Request Lifecycle Roadmap</h3>
+        <p class="mt-0.5 text-xs text-muted-foreground">Enterprise governance and delivery progression flow</p>
+      </div>
+      <span class="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">5-Stage Pipeline</span>
+    </div>
+
+    <div class="space-y-4">
+      @for (stage of stages(); track stage.number) {
+        <div
+          class="relative rounded-xl border p-4 transition-all"
+          [class.border-primary]="stage.isCurrent"
+          [class.bg-muted]="stage.isCurrent || stage.isPast"
+          [class.shadow-sm]="stage.isCurrent"
+          [class.border-border]="!stage.isCurrent && !stage.isPast"
+          [class.opacity-60]="!stage.isCurrent && !stage.isPast"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm"
+                [class.bg-primary]="stage.isCurrent"
+                [class.text-white]="stage.isCurrent"
+                [class.bg-emerald-500]="stage.isPast"
+                [class.text-white]="stage.isPast"
+                [class.bg-muted]="!stage.isCurrent && !stage.isPast"
+                [class.text-muted-foreground]="!stage.isCurrent && !stage.isPast"
+              >
+                @if (stage.isPast) {
+                  ✓
+                } @else {
+                  {{ stage.number }}
+                }
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm font-bold text-foreground">{{ stage.title }}</h4>
+                  <span class="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{{ stage.role }}</span>
+                  @if (stage.isCurrent) {
+                    <span class="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary animate-pulse-subtle">Active</span>
+                  }
+                  @if (stage.isPast) {
+                    <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Completed</span>
+                  }
+                </div>
+                <p class="mt-1 text-xs text-muted-foreground">{{ stage.description }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Outputs Pills -->
+          <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground">Outputs:</span>
+            @for (output of stage.keyOutputs; track output) {
+              <span class="rounded-md border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground">{{ output }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+</div>
+

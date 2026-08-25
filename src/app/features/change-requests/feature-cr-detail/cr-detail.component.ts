@@ -14,11 +14,27 @@ import { CrOverviewTabComponent } from '@/features/change-requests/feature-cr-de
 import { CrStatusTimelineTabComponent } from '@/features/change-requests/feature-cr-detail/tabs/status-timeline/status-timeline.component';
 import { PriorityBadgeComponent } from '@/shared/ui/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '@/shared/ui/status-badge/status-badge.component';
+import { StepItem, StepperComponent } from '@/shared/ui/stepper/stepper.component';
 import { formatDate } from '@/shared/util/formatters';
 
 type Tab = 'overview' | 'estimate' | 'timeline' | 'comments';
 
-@Component({ selector: 'app-cr-detail', standalone: true, imports: [RouterLink, StatusBadgeComponent, PriorityBadgeComponent, CrOverviewTabComponent, EstimationComponent, ReworkContextComponent, CrStatusTimelineTabComponent, CrAttachmentsCommentsTabComponent], templateUrl: './cr-detail.component.html' })
+@Component({
+  selector: 'app-cr-detail',
+  standalone: true,
+  imports: [
+    RouterLink,
+    StatusBadgeComponent,
+    PriorityBadgeComponent,
+    StepperComponent,
+    CrOverviewTabComponent,
+    EstimationComponent,
+    ReworkContextComponent,
+    CrStatusTimelineTabComponent,
+    CrAttachmentsCommentsTabComponent,
+  ],
+  templateUrl: './cr-detail.component.html',
+})
 export class CrDetailComponent implements OnInit {
   @ViewChild(EstimationComponent) private estimation?: EstimationComponent;
 
@@ -41,6 +57,71 @@ export class CrDetailComponent implements OnInit {
   readonly estimateDraftValid = signal(false);
   readonly transitions = computed(() => this.statuses.getAvailableForCr(this.cr()?.id ?? ''));
   readonly canAct = computed(() => this.statuses.canAct(this.cr()?.id ?? '', this.auth.user()?.role));
+
+  readonly primaryTransitions = computed(() => {
+    return this.transitions().filter(
+      (t) => !isReworkTransition(t) && !t.label.toLowerCase().includes('clarification') && !t.label.toLowerCase().includes('reject'),
+    );
+  });
+
+  readonly secondaryTransitions = computed(() => {
+    return this.transitions().filter(
+      (t) => isReworkTransition(t) || t.label.toLowerCase().includes('clarification') || t.label.toLowerCase().includes('reject'),
+    );
+  });
+
+  readonly lifecycleSteps = computed<StepItem[]>(() => {
+    const status = this.cr()?.status.toLowerCase() ?? '';
+    let activeIndex: number;
+    if (status.includes('deliver') || status.includes('complete') || status.includes('implement')) {
+      activeIndex = 4;
+    } else if (status.includes('progress') || status.includes('develop') || status.includes('test')) {
+      activeIndex = 3;
+    } else if (status.includes('approval') || status.includes('clarification') || status.includes('customer') || status.includes('client')) {
+      activeIndex = 2;
+    } else if (status.includes('accepted') || status.includes('estimat')) {
+      activeIndex = 1;
+    } else {
+      activeIndex = 0;
+    }
+
+    return [
+      { label: 'Submitted', description: 'Request created', done: activeIndex > 0, current: activeIndex === 0 },
+      { label: 'Estimation', description: 'Scope & pricing', done: activeIndex > 1, current: activeIndex === 1, role: 'Vendor' },
+      { label: 'Client Approval', description: 'Estimate sign-off', done: activeIndex > 2, current: activeIndex === 2, role: 'Client' },
+      { label: 'Implementation', description: 'Engineering & QA', done: activeIndex > 3, current: activeIndex === 3, role: 'Engineering' },
+      { label: 'Delivered', description: 'Verified & closed', done: activeIndex >= 4, current: activeIndex === 4 },
+    ];
+  });
+
+  readonly actionOwnerInfo = computed(() => {
+    const item = this.cr();
+    if (!item) return null;
+    const current = this.statuses.getCurrentForCr(item.id);
+    const accessedBy = current?.accessedBy.toLowerCase();
+    const isUserTurn = this.canAct();
+
+    if (accessedBy === 'admin') {
+      return {
+        role: 'Vendor Admin',
+        isUserTurn,
+        badgeClass: 'bg-primary/10 text-primary border border-primary/20',
+        description: isUserTurn
+          ? 'You have action required on this request. Prepare the estimate or advance the workflow.'
+          : 'Awaiting Vendor Admin response and cost estimation.',
+      };
+    } else {
+      return {
+        role: 'Client Account',
+        isUserTurn,
+        badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+        description: isUserTurn
+          ? 'Your review and confirmation are required to proceed with implementation.'
+          : 'Awaiting client approval or requested clarification.',
+      };
+    }
+  });
+
   readonly canEditEstimate = computed(() => {
     const item = this.cr();
     const currentStatus = this.statuses.getCurrentForCr(item?.id ?? '')?.currentStatus.toLowerCase() ?? '';

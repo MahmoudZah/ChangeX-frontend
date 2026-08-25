@@ -1,32 +1,125 @@
-<header class="mb-8"><h1 class="text-[28px] font-bold">{{ auth.isAdmin() ? 'Settings' : 'Account / Profile' }}</h1><p class="mt-1 text-sm text-muted-foreground">Manage your workspace identity and appearance preferences</p></header>
+<header class="mb-8">
+  <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{{ auth.isAdmin() ? 'Settings' : 'Account / Profile' }}</h1>
+  <p class="mt-1 text-sm text-muted-foreground">Manage your workspace identity and appearance preferences</p>
+</header>
 
 <div class="grid max-w-5xl gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-  <section class="rounded-[10px] border border-border bg-card p-6 md:p-8">
-    <h2 class="mb-6 text-lg font-bold">Profile Information</h2>
-    @if (loading()) { <p class="mb-5 text-sm text-muted-foreground">Refreshing profile details…</p> }
-    @if (error()) { <div class="mb-5 flex items-center justify-between gap-3 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"><span>{{ error() }}</span><button type="button" class="font-semibold underline" (click)="loadProfile()">Retry</button></div> }
-    @if (usesTokenProfile()) { <p class="mb-5 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">Profile details are shown from your authenticated token because the current API cannot resolve the client scope for UserAdmin tokens.</p> }
+  <section class="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-8">
+    <h2 class="mb-6 text-base font-bold text-foreground">Profile Information</h2>
+    @if (loading()) {
+      <p class="mb-5 text-xs text-muted-foreground">Refreshing profile details…</p>
+    }
+    @if (error()) {
+      <div class="mb-5 flex items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <span>{{ error() }}</span>
+        <button type="button" class="font-semibold underline" (click)="loadProfile()">Retry</button>
+      </div>
+    }
+    @if (usesTokenProfile()) {
+      <p class="mb-5 rounded-xl border border-border bg-muted/30 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        Profile details are shown from your authenticated token because the current API cannot resolve the client scope for UserAdmin tokens.
+      </p>
+    }
     <div class="mb-7 flex items-center gap-4">
-      <img [src]="auth.isAdmin() ? '/assets/icons/avatar-admin.png' : '/assets/icons/avatar-client.png'" alt="" class="h-16 w-16 rounded-full object-cover" />
-      <div><h3 class="text-xl font-bold">{{ displayName() }}</h3><p class="mt-0.5 text-sm text-muted-foreground">{{ displayCompany() }}</p></div>
+      <img [src]="auth.isAdmin() ? '/assets/icons/avatar-admin.png' : '/assets/icons/avatar-client.png'" alt="" class="h-16 w-16 rounded-2xl border border-border object-cover shadow-sm" />
+      <div>
+        <h3 class="text-lg font-bold text-foreground">{{ displayName() }}</h3>
+        <p class="mt-0.5 text-xs text-muted-foreground">{{ displayCompany() }}</p>
+      </div>
     </div>
-    <dl class="grid gap-5 border-t border-border pt-6 sm:grid-cols-2">
-      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email Address</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayEmail() }}</dd></div>
-      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workspace Role</dt><dd class="mt-1.5 text-sm font-semibold">{{ auth.user()?.role === 'Admin' ? 'Vendor Administrator' : auth.user()?.role === 'UserAdmin' ? 'Client Administrator' : 'Client User' }}</dd></div>
-      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Organization</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayCompany() }}</dd></div>
-      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone Number</dt><dd class="mt-1.5 text-sm font-semibold">{{ displayPhone() }}</dd></div>
-      <div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account ID</dt><dd class="mt-1.5 truncate text-sm font-semibold">{{ auth.user()?.id || '—' }}</dd></div>
+    <dl class="grid gap-5 border-t border-border pt-6 sm:grid-cols-2 text-xs">
+      <div>
+        <dt class="font-semibold uppercase tracking-wider text-muted-foreground">Email Address</dt>
+        <dd class="mt-1 text-sm font-semibold text-foreground">{{ displayEmail() }}</dd>
+      </div>
+      <div>
+        <dt class="font-semibold uppercase tracking-wider text-muted-foreground">Workspace Role</dt>
+        <dd class="mt-1 text-sm font-semibold text-foreground">{{ auth.user()?.role === 'Admin' ? 'Vendor Administrator' : auth.user()?.role === 'UserAdmin' ? 'Client Administrator' : 'Client User' }}</dd>
+      </div>
+      <div>
+        <dt class="font-semibold uppercase tracking-wider text-muted-foreground">Organization</dt>
+        <dd class="mt-1 text-sm font-semibold text-foreground">{{ displayCompany() }}</dd>
+      </div>
+      <div>
+        <dt class="font-semibold uppercase tracking-wider text-muted-foreground">Phone Number</dt>
+        <dd class="mt-1 text-sm font-semibold text-foreground">{{ displayPhone() }}</dd>
+      </div>
+      <div>
+        <dt class="font-semibold uppercase tracking-wider text-muted-foreground">Account ID</dt>
+        <dd class="mt-1 truncate font-mono text-xs font-semibold text-muted-foreground">{{ auth.user()?.id || '—' }}</dd>
+      </div>
     </dl>
   </section>
 
   <div class="space-y-6">
-    <section class="rounded-[10px] border border-border bg-card p-6">
-      <h2 class="text-lg font-bold">Appearance</h2><p class="mt-1 text-sm text-muted-foreground">Choose how ChangeX looks on this device.</p>
+    <!-- Appearance Theme Selector -->
+    <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 class="text-base font-bold text-foreground">Appearance</h2>
+      <p class="mt-1 text-xs text-muted-foreground">Choose your preferred workspace interface theme.</p>
+      
       <div class="mt-5 grid grid-cols-2 gap-3">
-        <button type="button" (click)="theme.toggle('light')" class="rounded-lg border p-4 text-left" [class.border-primary]="theme.mode() === 'light'" [class.bg-status-accepted]="theme.mode() === 'light'" [class.border-border]="theme.mode() !== 'light'"><img src="/assets/icons/sun.svg" alt="" class="mb-3 h-5 w-5" /><span class="block text-sm font-bold">Light</span></button>
-        <button type="button" (click)="theme.toggle('dark')" class="rounded-lg border p-4 text-left" [class.border-primary]="theme.mode() === 'dark'" [class.bg-muted]="theme.mode() === 'dark'" [class.border-border]="theme.mode() !== 'dark'"><img src="/assets/icons/moon.svg" alt="" class="mb-3 h-5 w-5" /><span class="block text-sm font-bold">Dark</span></button>
+        <!-- Light Mode Card -->
+        <button
+          type="button"
+          (click)="theme.toggle('light')"
+          class="group relative rounded-2xl border p-4 text-left transition-all"
+          [class.border-primary]="theme.mode() === 'light'"
+          [class.ring-2]="theme.mode() === 'light'"
+          [class.ring-primary/20]="theme.mode() === 'light'"
+          [class.bg-card]="theme.mode() === 'light'"
+          [class.border-border]="theme.mode() !== 'light'"
+          [class.hover:border-primary/50]="theme.mode() !== 'light'"
+        >
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 transition-transform group-hover:scale-105">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+          </div>
+          <span class="block text-sm font-bold text-foreground">Light</span>
+          <span class="mt-0.5 block text-[11px] text-muted-foreground">Daytime contrast</span>
+          @if (theme.mode() === 'light') {
+            <span class="absolute top-3 right-3 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+              ✓
+            </span>
+          }
+        </button>
+
+        <!-- Dark Mode Card -->
+        <button
+          type="button"
+          (click)="theme.toggle('dark')"
+          class="group relative rounded-2xl border p-4 text-left transition-all"
+          [class.border-primary]="theme.mode() === 'dark'"
+          [class.ring-2]="theme.mode() === 'dark'"
+          [class.ring-primary/20]="theme.mode() === 'dark'"
+          [class.bg-card]="theme.mode() === 'dark'"
+          [class.border-border]="theme.mode() !== 'dark'"
+          [class.hover:border-primary/50]="theme.mode() !== 'dark'"
+        >
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 transition-transform group-hover:scale-105">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+          </div>
+          <span class="block text-sm font-bold text-foreground">Dark</span>
+          <span class="mt-0.5 block text-[11px] text-muted-foreground">Deep indigo tones</span>
+          @if (theme.mode() === 'dark') {
+            <span class="absolute top-3 right-3 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+              ✓
+            </span>
+          }
+        </button>
       </div>
     </section>
-    <section class="rounded-[10px] border border-border bg-card p-6"><h2 class="text-lg font-bold">Security</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Your session is protected by the authenticated ChangeX API token. Sign out from the sidebar when using a shared device.</p></section>
+
+    <!-- Security Information -->
+    <section class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 class="text-base font-bold text-foreground">Session & Security</h2>
+      <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+        Your session is securely authenticated using bearer API tokens. Remember to sign out when accessing ChangeX on shared or public workstations.
+      </p>
+    </section>
   </div>
 </div>
+

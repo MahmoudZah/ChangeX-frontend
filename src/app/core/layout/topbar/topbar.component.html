@@ -1,12 +1,58 @@
 <header class="sticky top-0 z-40 border-b border-white/10 bg-sidebar px-5 text-white lg:hidden">
   <div class="flex h-16 items-center justify-between">
-    <a routerLink="/dashboard" class="flex items-center gap-2" (click)="close()"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-primary">CX</span><span class="font-bold">ChangeX</span></a>
-    <button type="button" class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 text-xl" (click)="toggle()" [attr.aria-expanded]="open()" aria-label="Open navigation">{{ open() ? '×' : '☰' }}</button>
+    <a routerLink="/dashboard" class="flex items-center gap-2" (click)="close()">
+      <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-sm font-bold text-primary shadow-sm">CX</span>
+      <span class="font-bold tracking-tight">ChangeX</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <!-- Mobile Theme Toggle -->
+      <button
+        type="button"
+        (click)="theme.toggle()"
+        class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition-all hover:bg-white/10"
+        [attr.aria-label]="'Switch to ' + (theme.mode() === 'light' ? 'dark' : 'light') + ' mode'"
+      >
+        @if (theme.mode() === 'light') {
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+        } @else {
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        }
+      </button>
+
+      <!-- Menu Toggle -->
+      <button
+        type="button"
+        class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 text-lg transition-all hover:bg-white/10"
+        (click)="toggle()"
+        [attr.aria-expanded]="open()"
+        aria-label="Open navigation"
+      >
+        {{ open() ? '✕' : '☰' }}
+      </button>
+    </div>
   </div>
   @if (open()) {
-    <nav class="grid gap-1 border-t border-white/10 py-3">
-      @for (link of links(); track link.path) { <a [routerLink]="link.path" routerLinkActive="bg-sidebar-active" [routerLinkActiveOptions]="{ exact: link.path === '/dashboard' }" class="rounded-lg px-4 py-2.5 text-sm font-semibold" (click)="close()">{{ link.label }}</a> }
-      <button type="button" class="mt-2 rounded-lg border border-white/15 px-4 py-2.5 text-left text-sm font-semibold" (click)="logout()">Sign out</button>
+    <nav class="grid gap-1 border-t border-white/10 py-3 animate-in fade-in duration-150">
+      @for (link of links(); track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="bg-sidebar-active text-white"
+          [routerLinkActiveOptions]="{ exact: link.path === '/dashboard' }"
+          class="rounded-xl px-4 py-2.5 text-sm font-semibold text-sidebar-muted hover:text-white transition-colors"
+          (click)="close()"
+        >
+          {{ link.label }}
+        </a>
+      }
+      <button type="button" class="mt-2 rounded-xl border border-white/15 px-4 py-2.5 text-left text-sm font-semibold text-sidebar-muted hover:text-white transition-colors" (click)="logout()">
+        Sign out
+      </button>
     </nav>
   }
 </header>
+

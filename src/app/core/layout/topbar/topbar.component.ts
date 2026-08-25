@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
+import { ThemeService } from '@/core/theme/theme.service';
 
 @Component({
   selector: 'app-topbar',
@@ -11,7 +12,9 @@ import { AuthService } from '@/core/auth/auth.service';
 export class TopbarComponent {
   private router = inject(Router);
   readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   readonly open = signal(false);
+
 
   readonly clientLinks = [
     { path: '/dashboard', label: 'Dashboard' }, { path: '/projects', label: 'Projects' },
